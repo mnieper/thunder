@@ -1,0 +1,13 @@
+*.trs
+/_Noreturn.h
+/arg-nonnull.h
+/c++defs.h
+/dummy.c
+/warn-on-use.h
+/test.sh
+/gc
+/number
+/object
+/reader
+/symbol_table
+/unused-parameter.h

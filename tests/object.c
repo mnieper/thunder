@@ -1,0 +1,81 @@
+/*
+ * Copyright (C) 2017  Marc Nieper-Wißkirchen
+ *
+ * This file is part of Thunder.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Thunder is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see
+ * <http://www.gnu.org/licenses/>.
+ */
+
+#if HAVE_CONFIG_H
+# include <config.h>
+#endif
+#include <stdbool.h>
+#include <stddef.h>
+#include <string.h>
+
+#include "vmcommon.h"
+#include "macros.h"
+
+int
+main (int argc, char *argv)
+{
+  Heap heap;
+  heap_init (&heap, 1ULL << 20);
+  Object p;
+
+  p = make_null ();
+  ASSERT (is_null (p));
+
+  p = make_char ('a');
+  ASSERT (is_char (p));
+  ASSERT (char_value (p) == 'a');
+
+  p = make_boolean (true);
+  ASSERT (is_boolean (p));
+  ASSERT (boolean_value (p));
+
+  p = make_boolean (false);
+  ASSERT (is_boolean (p));
+  ASSERT (!boolean_value (p));
+
+  p = cons (&heap, make_null (), make_null ());
+  ASSERT (is_pair (p));
+  ASSERT (is_null (car (p)));
+  ASSERT (is_null (cdr (p)));  
+
+  p = make_symbol (&heap, u8"symbol", strlen (u8"symbol"));
+  ASSERT (is_symbol (p));
+  ASSERT (symbol_length (p) == strlen (u8"symbol"));
+  ASSERT (memcmp (symbol_bytes (p), u8"symbol", strlen (u8"symbol")) == 0);
+  
+  p = make_string (&heap, 2, 64);
+  ASSERT (is_string (p));
+  string_set (p, 0, 65);
+  ASSERT (is_string (p));
+  ASSERT (string_ref (p, 0) == 65);
+  ASSERT (string_ref (p, 1) == 64);
+  ASSERT (string_length (p) == 2);
+  
+  p = make_vector (&heap, 3, make_char ('a'));
+  ASSERT (is_vector (p));
+  vector_set (&heap, p, 0, make_null ());
+  ASSERT (is_vector (p));
+  ASSERT (is_null (vector_ref (p, 0)));
+  ASSERT (is_char (vector_ref (p, 1)));
+  ASSERT (is_char (vector_ref (p, 2)));
+  ASSERT (vector_length (p) == 3);
+  
+  heap_destroy (&heap);
+}

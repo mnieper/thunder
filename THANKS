@@ -1,0 +1,13 @@
+Additional contributors to Thunder.
+
+  Copyright (C) 2017 Marc Nieper-Wißkirchen.
+
+  Copying and distribution of this file, with or without modification,
+  are permitted in any medium without royalty provided the copyright
+  notice and this notice are preserved.
+
+Thanks to:
+
+    All the translators (run 'grep -e ^\"Last-Translator: po/*.po').
+
+See also the AUTHORS and ChangeLog files.
