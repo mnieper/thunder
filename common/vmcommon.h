@@ -23,6 +23,7 @@
 #include <gmp.h>
 #include <lightning.h>
 #include <mpfr.h>
+#include <mpc.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -41,6 +42,10 @@
 
 #define SYMBOL(id)				\
   symbols[id]
+
+#define RESOURCES					\
+  ENTRY (EXACT_NUMBER, mpq_t, mpq_init, mpq_clear)	\
+  ENTRY (INEXACT_NUMBER, mpc_t, complex_init, mpc_clear)
 
 #define obstack_chunk_alloc xmalloc
 #define obstack_chunk_free  free
@@ -99,6 +104,9 @@ is_pointer (Object object);
 bool
 is_unmanaged (Pointer pointer);
 
+Object
+header_type (Pointer pointer);
+
 bool
 is_binary (Object header);
 
@@ -141,26 +149,40 @@ symbol_table_clear (SymbolTable *restrict symbol_table, bool major_gc);
 /* Resource manager */
 
 #define RESOURCE_PAYLOAD(res)			\
-  (res->number)
+  (res->payload)
 
-typedef struct resource Resource;
-typedef DEQUE(resource) ResourceList;
+#define TYPE(id)         id##_TYPE
+#define resource(id)     resource_##id
+#define Resource(id)	 Resource_##id
+#define ResourceList(id) ResourceList_##id
+
+#define ENTRY(id, type, init, destroy)			\
+  typedef struct resource(id) Resource(id);		\
+  typedef DEQUE(resource(id)) ResourceList(id);		\
+  struct resource(id)					\
+  {							\
+    Object header;					\
+    type payload;					\
+    bool in_nursery;					\
+    DEQUE_ENTRY(resource(id));				\
+  };
+RESOURCES
+#undef ENTRY
+
+#define nursery_list(id) nursery_list_##id
+#define heap_list(id)    heap_list_##id
+#define free_list(id)    free_list_##id
 
 typedef struct resource_manager ResourceManager;
 struct resource_manager
 {
-  ResourceList nursery_list;
-  ResourceList heap_list;
-  ResourceList free_list;
+#define ENTRY(id, type, init, destroy)		\
+  ResourceList(id) nursery_list(id);		\
+  ResourceList(id) heap_list(id);		\
+  ResourceList(id) free_list(id);
+  RESOURCES
+#undef ENTRY
   bool major_gc;
-};
-
-struct resource
-{
-  Object header;
-  mpq_t number;
-  bool in_nursery;
-  DEQUE_ENTRY(resource);
 };
 
 void
@@ -169,8 +191,13 @@ resource_manager_init (ResourceManager *rm);
 void
 resource_manager_destroy (ResourceManager *rm);
 
-Resource *
-resource_manager_allocate (ResourceManager *rm);
+#define resource_manager_allocate(id, rm) resource_manager_allocate_##id (rm)
+
+#define ENTRY(id, type, init, destroy)			\
+  Resource(id) *					\
+  resource_manager_allocate_##id (ResourceManager *rm);
+RESOURCES
+#undef ENTRY
 
 void
 resource_manager_begin_gc (ResourceManager *rm, bool major_gc);
@@ -178,8 +205,13 @@ resource_manager_begin_gc (ResourceManager *rm, bool major_gc);
 void
 resource_manager_end_gc (ResourceManager *rm);
 
-void
-resource_manager_mark (ResourceManager *rm, Resource *res);
+#define resource_manager_mark(id, rm, res) resource_manager_mark_##id (rm, res)
+
+#define ENTRY(id, type, init, destroy)		\
+  void								\
+  resource_manager_mark_##id (ResourceManager *rm, Resource(id) *res);
+RESOURCES
+#undef ENTRY
 
 /* Heap */
 
@@ -306,7 +338,19 @@ is_exact_number (Object object);
 void
 exact_number_value (mpq_t q, Object num);
 
+Object
+make_inexact_number (Heap *restrict heap, mpc_t x);
+
+bool
+is_inexact_number (Object object);
+
+void
+inexact_number_value (mpc_t x, Object num);
+
 /* Numbers */
+
+void
+complex_init (mpc_t x);
 
 void
 inexact_to_exact (mpq_t exact, mpfr_t inexact);

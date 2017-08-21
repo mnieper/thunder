@@ -25,6 +25,12 @@
 #include "minmax.h"
 #include "vmcommon.h"
 
+void
+complex_init (mpc_t x)
+{
+  mpc_init2 (x, 53);
+}
+
 static void
 round_quotient (mpz_t q, mpz_t num, mpz_t den)
 {

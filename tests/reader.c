@@ -89,6 +89,10 @@ int main (int argc, char *argv[])
   ASSERT (check_datum (u8"(1 . 2)", is_pair));
   ASSERT (check_datum (u8"'x", is_pair));
   ASSERT (check_datum (u8"125", is_exact_number));
+  ASSERT (check_datum (u8"1.1", is_inexact_number));
+  ASSERT (check_datum (u8"#i1/2", is_inexact_number));
+  
+  /* TODO: Number tests */
   
   /*
   ASSERT (check_number (u8"42", 10));

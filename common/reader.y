@@ -120,7 +120,8 @@ yyerror (YYLTYPE *lloc, void *scanner, char const *msg);
 %token <exact_number>   EXACT_NUMBER
 %token <inexact_number> INEXACT_NUMBER
 
-%type <object>   boolean character exact_number list symbol string vector datum abbreviation tail
+%type <object>   boolean character exact_number inexact_number list symbol string vector
+%type <object>   datum abbreviation tail
 %type <elements> elements
 
 %destructor { mpq_clear ($$); }                 <exact_number>
@@ -145,6 +146,7 @@ start: datum
 datum: boolean
      | character
      | exact_number
+     | inexact_number
      | list
      | string
      | symbol
@@ -168,6 +170,13 @@ exact_number: EXACT_NUMBER
 		  mpq_clear ($1);
 		}
             ;
+
+inexact_number: INEXACT_NUMBER
+                  {
+		    $$ = make_inexact_number (HEAP, $1);
+		    mpc_clear ($1);
+		  }
+              ;
 
 list: '(' ')'
         {  

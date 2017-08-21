@@ -147,10 +147,19 @@ process (Heap *heap, Object *object)
 
   if (is_unmanaged ((Pointer) *object))
     {
-      resource_manager_mark (&heap->resource_manager, (Resource *) ((Pointer) *object - 1));
-      return;
+      switch (header_type ((Pointer) *object))
+	{
+#define ENTRY(id, type, init, destroy)					\
+	  case TYPE(id):						\
+	    resource_manager_mark (id,					\
+				   &heap->resource_manager,		\
+				   (Resource(id) *) ((Pointer) *object - 1)); \
+	    return;
+	  RESOURCES
+#undef ENTRY
+	}
     }
-  
+
   *object = (Object) forward (heap, (Pointer) *object);
 }
 

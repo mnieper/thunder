@@ -28,53 +28,60 @@
 #include "vmcommon.h"
 #include "xalloc.h"
 
-// XXX X-Macro for different resource types
-
-static void
-resource_list_destroy (ResourceList *deque)
-{
-  Resource *res;
-  while ((res = deque_pop (deque)) != NULL)
-    {
-      mpq_clear (res->number);
-      free (res);
-    }
-}
+#define resource_list_destroy(id, list)	resource_list_destroy_##id (list)
+#define ENTRY(id, type, init, destroy)			\
+  static void						\
+  resource_list_destroy_##id (ResourceList(id) *deque)	\
+  {							\
+    Resource(id) *res;					\
+    while ((res = deque_pop (deque)) != NULL)		\
+      {							\
+	destroy (res->payload);				\
+	free (res);					\
+      }							\
+  }
+RESOURCES
+#undef ENTRY
 
 void
 resource_manager_init (ResourceManager *rm)
 {
-  deque_init (&rm->nursery_list);
-  deque_init (&rm->heap_list);
-  deque_init (&rm->free_list);
+#define ENTRY(id, type, init, destroy)		\
+  deque_init (&rm->nursery_list(id));		\
+  deque_init (&rm->heap_list(id));		\
+  deque_init (&rm->free_list(id));		
+  RESOURCES
+#undef ENTRY
 }
 
 void
 resource_manager_destroy (ResourceManager *rm)
 {
-  resource_list_destroy (&rm->nursery_list);
-  resource_list_destroy (&rm->heap_list);
-  resource_list_destroy (&rm->free_list);
+#define ENTRY(id, type, init, destroy)			\
+  resource_list_destroy (id, &rm->nursery_list(id));	\
+  resource_list_destroy (id, &rm->heap_list(id));	\
+  resource_list_destroy (id, &rm->free_list(id));
+  RESOURCES
+#undef ENTRY
 }
 
-Resource *
-resource_manager_allocate (ResourceManager *rm)
-{
-  Resource *res = deque_pop (&rm->free_list);
-  
-  if (res == NULL)
-    {
-      res = XMALLOC (Resource);
-      res->header = EXACT_NUMBER_TYPE;
-      mpq_init (res->number);
-    }
-
-  res->in_nursery = true;
-
-  deque_insert (&rm->nursery_list, res);
-
-  return res;
-}
+#define ENTRY(id, type, init, destroy)			\
+  Resource(id) *					\
+  resource_manager_allocate_##id (ResourceManager *rm)	\
+  {							\
+    Resource(id) *res = deque_pop (&rm->free_list(id));	\
+    if (res == NULL)				        \
+    {                                                   \
+      res = XMALLOC (Resource(id));                     \
+      res->header = TYPE(id);				\
+      init (res->payload);				\
+    }                                                   \
+    res->in_nursery = true;                             \
+    deque_insert (&rm->nursery_list(id), res);          \
+    return res;                                         \
+  }
+RESOURCES
+#undef ENTRY
 
 void
 resource_manager_begin_gc (ResourceManager *rm, bool major_gc)
@@ -84,23 +91,31 @@ resource_manager_begin_gc (ResourceManager *rm, bool major_gc)
   if (!major_gc)
     return;
 
-  deque_concat (&rm->nursery_list, &rm->heap_list);
+#define ENTRY(id, type, init, destroy)				\
+  deque_concat (&rm->nursery_list(id), &rm->heap_list(id));
+  RESOURCES
+#undef ENTRY
 }
 
 void
 resource_manager_end_gc (ResourceManager *rm)
 {
-  deque_concat (&rm->free_list, &rm->nursery_list);
+#define ENTRY(id, type, init, destroy)				\
+  deque_concat (&rm->free_list(id), &rm->nursery_list(id));
+  RESOURCES
+#undef ENTRY
 }
 
-void
-resource_manager_mark (ResourceManager *rm, Resource *res)
-{
-  if (!rm->major_gc && !res->in_nursery)
-    return;
+#define ENTRY(id, type, init, destroy)					\
+  void									\
+  resource_manager_mark_##id (ResourceManager *rm, Resource(id) *res)	\
+  {									\
+    if (!rm->major_gc && !res->in_nursery)				\
+      return;								\
+    res->in_nursery = false;						\
+    deque_remove (&rm->nursery_list(id), res);				\
+    deque_insert (&rm->heap_list(id), res);				\
+  }
+RESOURCES
+#undef ENTRY
 
-  res->in_nursery = false;
-  
-  deque_remove (&rm->nursery_list, res);
-  deque_insert (&rm->heap_list, res);
-}

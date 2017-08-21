@@ -43,6 +43,12 @@ is_unmanaged (Pointer pointer)
     == (HEADER_TYPE | UNMANAGED_TYPE);
 }
 
+Object
+header_type (Pointer pointer)
+{
+  return pointer[-1] & HEADER_TYPE_MASK;
+}
+
 bool
 is_binary (Object header)
 {
@@ -376,7 +382,8 @@ is_vector (Object object)
 Object
 make_exact_number (Heap *restrict heap, mpq_t q)
 {
-  Resource *res = resource_manager_allocate (&heap->resource_manager);
+  Resource(EXACT_NUMBER) *res
+    = resource_manager_allocate (EXACT_NUMBER, &heap->resource_manager);
   mpq_swap (RESOURCE_PAYLOAD (res), q);
   return (Object) res | POINTER_TYPE;
 }
@@ -392,4 +399,27 @@ void
 exact_number_value (mpq_t q, Object num)
 {
   mpq_set (q, *(mpq_t *) num);
+}
+
+/* The value in X is destroyed after calling this function. */
+Object
+make_inexact_number (Heap *restrict heap, mpc_t x)
+{
+  Resource(INEXACT_NUMBER) *res
+    = resource_manager_allocate (INEXACT_NUMBER, &heap->resource_manager);
+  mpc_swap (RESOURCE_PAYLOAD (res), x);
+  return (Object) res | POINTER_TYPE;
+}
+
+bool
+is_inexact_number (Object object)
+{
+  return (object & OBJECT_TYPE_MASK) == POINTER_TYPE
+    && (((Pointer) object)[-1] & HEADER_TYPE_MASK) == INEXACT_NUMBER_TYPE;
+}
+  
+void
+inexact_number_value (mpc_t x, Object num)
+{
+  mpc_set (x, *(mpc_t *) num, MPC_RNDNN);
 }

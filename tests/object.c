@@ -85,5 +85,14 @@ main (int argc, char *argv)
   ASSERT (mpq_cmp_si (q, 0, 1) == 0);
   mpq_clear (q);
       
+  mpc_t x;
+  mpc_init2 (x, 53);
+  mpc_set_ui (x, 1, MPC_RNDNN);
+  p = make_inexact_number (&heap, x);
+  ASSERT (is_inexact_number (p));
+  inexact_number_value (x, p);
+  ASSERT (mpc_cmp_si (x, 1) == 0);
+  mpc_clear (x);
+      
   heap_destroy (&heap);
 }
