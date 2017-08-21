@@ -76,6 +76,14 @@ main (int argc, char *argv)
   ASSERT (is_char (vector_ref (p, 1)));
   ASSERT (is_char (vector_ref (p, 2)));
   ASSERT (vector_length (p) == 3);
-  
+
+  mpq_t q;
+  mpq_init (q);
+  p = make_exact_number (&heap, q);
+  ASSERT (is_exact_number (p));
+  exact_number_value (q, p);
+  ASSERT (mpq_cmp_si (q, 0, 1) == 0);
+  mpq_clear (q);
+      
   heap_destroy (&heap);
 }

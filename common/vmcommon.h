@@ -27,6 +27,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "deque.h"
 #include "hash.h"
 #include "obstack.h"
 #include "unitypes.h"
@@ -58,20 +59,21 @@
 
 #define HEADER_TYPE_MASK  0xffff
 #define BINARY_TYPE       0x10
+#define UNMANAGED_TYPE    0x20
 #define HEADER_SIZE_SHIFT 16
 #define MAKE_HEADER_TYPE(type) (type * 0x100 | HEADER_TYPE)
 #define HEADER_SIZE(words) (words << HEADER_PAYLOAD_SHIFT)
 
-#define STRING_TYPE     (MAKE_HEADER_TYPE (0) | BINARY_TYPE)
-#define SYMBOL_TYPE     (MAKE_HEADER_TYPE (1) | BINARY_TYPE)
-#define BYTEVECTOR_TYPE (MAKE_HEADER_TYPE (2) | BINARY_TYPE)
-#define PORT_TYPE       (MAKE_HEADER_TYPE (3) | BINARY_TYPE | HEADER_SIZE (2))
-#define EXACT_TYPE      (MAKE_HEADER_TYPE (4) | BINARY_TYPE | HEADER_SIZE (2))
-#define INEXACT_TYPE    (MAKE_HEADER_TYPE (5) | BINARY_TYPE | HEADER_SIZE (2))
-#define EPHEMERON_TYPE  (MAKE_HEADER_TYPE (6) | BINARY_TYPE | HEADER_SIZE (6))
-#define CLOSURE_TYPE    MAKE_HEADER_TYPE (7)
-#define VECTOR_TYPE     MAKE_HEADER_TYPE (8)
-#define RECORD_TYPE     MAKE_HEADER_TYPE (9)
+#define STRING_TYPE         (MAKE_HEADER_TYPE (0) | BINARY_TYPE)
+#define SYMBOL_TYPE         (MAKE_HEADER_TYPE (1) | BINARY_TYPE)
+#define BYTEVECTOR_TYPE     (MAKE_HEADER_TYPE (2) | BINARY_TYPE)
+#define PORT_TYPE           (MAKE_HEADER_TYPE (3) | BINARY_TYPE | HEADER_SIZE (2))
+#define EXACT_NUMBER_TYPE   (MAKE_HEADER_TYPE (4) | UNMANAGED_TYPE)
+#define INEXACT_NUMBER_TYPE (MAKE_HEADER_TYPE (5) | UNMANAGED_TYPE)
+#define EPHEMERON_TYPE      (MAKE_HEADER_TYPE (6) | BINARY_TYPE | HEADER_SIZE (6))
+#define CLOSURE_TYPE        MAKE_HEADER_TYPE (7)
+#define VECTOR_TYPE         MAKE_HEADER_TYPE (8)
+#define RECORD_TYPE         MAKE_HEADER_TYPE (9)
 
 #define IMMEDIATE_TYPE_MASK       0xff
 #define IMMEDIATE_PAYLOAD_SHIFT   8
@@ -93,6 +95,9 @@ is_immediate (Object object);
 
 bool
 is_pointer (Object object);
+
+bool
+is_unmanaged (Pointer pointer);
 
 bool
 is_binary (Object header);
@@ -133,6 +138,51 @@ symbol_table_intern (SymbolTable *restrict symbol_table, Object sym, bool gc);
 Object
 symbol_table_clear (SymbolTable *restrict symbol_table, bool major_gc);
 
+/* Resource manager */
+
+#define RESOURCE_PAYLOAD(res)			\
+  (res->number)
+
+typedef struct resource Resource;
+typedef DEQUE(resource) ResourceList;
+
+typedef struct resource_manager ResourceManager;
+struct resource_manager
+{
+  ResourceList nursery_list;
+  ResourceList heap_list;
+  ResourceList free_list;
+  bool major_gc;
+};
+
+struct resource
+{
+  Object header;
+  mpq_t number;
+  bool in_nursery;
+  DEQUE_ENTRY(resource);
+};
+
+void
+resource_manager_init (ResourceManager *rm);
+
+void
+resource_manager_destroy (ResourceManager *rm);
+
+Resource *
+resource_manager_allocate (ResourceManager *rm);
+
+void
+resource_manager_begin_gc (ResourceManager *rm, bool major_gc);
+
+void
+resource_manager_end_gc (ResourceManager *rm);
+
+void
+resource_manager_mark (ResourceManager *rm, Resource *res);
+
+/* Heap */
+
 typedef struct heap Heap;
 struct heap
 {
@@ -141,6 +191,7 @@ struct heap
   size_t heap_size;
   MutationTable *mutation_table;
   SymbolTable symbol_table;
+  ResourceManager resource_manager;
   struct obstack stack;
   void *stack_base;
 };
@@ -156,6 +207,8 @@ collect (Heap *heap, size_t nursery_size, Object *roots[], size_t root_num);
 
 void
 mutate (Heap *heap, Pointer field, Object value);
+
+/* Scheme objects */
 
 Object
 make_null ();
@@ -244,8 +297,21 @@ vector_set (Heap *heap, Object vector, size_t index, Object value);
 bool
 is_vector (Object object);
 
+Object
+make_exact_number (Heap *restrict heap, mpq_t q);
+
+bool
+is_exact_number (Object object);
+
+void
+exact_number_value (mpq_t q, Object num);
+
+/* Numbers */
+
 void
 inexact_to_exact (mpq_t exact, mpfr_t inexact);
+
+/* Scheme reader */
 
 typedef struct reader
 {

@@ -76,7 +76,7 @@ ASCII-compatible.  This can be fixed by using UTF-8 codes directly. */
 	     yycolumn += 8 - yycolumn % 8;				\
 	     break;							\
 	   default:							\
-	     n = uc_width (uc, locale_charset ());				\
+	     n = uc_width (uc, locale_charset ());			\
 	     if (n >= 0)						\
 	       yycolumn += n;						\
 	   }								\
@@ -272,8 +272,6 @@ IDENTIFIER           {INITIAL}{SUBSEQUENT}*|{PECULIAR-IDENTIFIER}
   \" obstack_init (&yylval->stack); yy_push_state (SC_STRING, yyscanner);
 
   {WHITESPACE}
-
-  {ANY-CHAR} return INVALID;
 }
 
 <SC_STRING>{
@@ -367,8 +365,11 @@ IDENTIFIER           {INITIAL}{SUBSEQUENT}*|{PECULIAR-IDENTIFIER}
 
   <<EOF>>        return end_number (yyscanner, true);
   ""/{DELIMITER} return end_number (yyscanner, false);
-  ""/.           | 
-  {ANY-CHAR}     return INVALID;
+  ""/.           return INVALID;
+}
+
+<*>{
+  {ANY-CHAR} return INVALID;
 }
 
 %%

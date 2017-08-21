@@ -26,10 +26,6 @@
 #include "unitypes.h"
 #include "vmcommon.h"
 
-// XXX: TODO gc
-// XXX: TODO default symbols wie quote! (quote, ...) : wo gibt es die? Array !
-
-
 static size_t
 hasher (void const *entry, size_t table_size)
 {

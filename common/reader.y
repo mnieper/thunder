@@ -120,7 +120,7 @@ yyerror (YYLTYPE *lloc, void *scanner, char const *msg);
 %token <exact_number>   EXACT_NUMBER
 %token <inexact_number> INEXACT_NUMBER
 
-%type <object>   boolean character list symbol string vector datum abbreviation tail
+%type <object>   boolean character exact_number list symbol string vector datum abbreviation tail
 %type <elements> elements
 
 %destructor { mpq_clear ($$); }                 <exact_number>
@@ -144,6 +144,7 @@ start: datum
 
 datum: boolean
      | character
+     | exact_number
      | list
      | string
      | symbol
@@ -160,6 +161,13 @@ character: CHARACTER
              {
 	       $$ = make_char ($1);
              }
+
+exact_number: EXACT_NUMBER
+                {
+		  $$ = make_exact_number (HEAP, $1);
+		  mpq_clear ($1);
+		}
+            ;
 
 list: '(' ')'
         {  
@@ -282,8 +290,8 @@ read_number (Heap *heap, uint8_t const *bytes, size_t length, int radix)
   struct context context;
   context_init (&context, heap, radix, NULL);
   yylex_init_extra (&context, &scanner);
-  yyset_debug (1, scanner); // XXX
   YY_BUFFER_STATE buffer = yy_scan_bytes (bytes, length, scanner);
+  yyset_debug (yydebug, scanner);
   int res = yyparse (scanner);
   if (res == 2)
     xalloc_die ();
@@ -306,7 +314,7 @@ reader_init (Reader *restrict reader, Heap *heap, FILE *in)
   Context context = XMALLOC (struct context);
   context_init (context, heap, 0, in);
   yylex_init_extra (context, &reader->scanner);
-  //yyset_debug (1, &reader->scanner); // XXX
+  yyset_debug (yydebug, reader->scanner);
   yyset_in (in, reader->scanner);
 }
 

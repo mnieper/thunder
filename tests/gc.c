@@ -21,6 +21,7 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
+#include <gmp.h>
 #include <stddef.h>
 
 #include "vmcommon.h"
@@ -30,7 +31,7 @@ int
 main (int argc, char *argv)
 {
   Heap heap;
-  heap_init (&heap, 1ULL << 20);
+  heap_init (&heap, 1ULL << 24);
 
   Object s = SYMBOL(QUOTE);
   
@@ -63,6 +64,16 @@ main (int argc, char *argv)
 
   ASSERT (s == SYMBOL(QUOTE));
   ASSERT (s == make_symbol (&heap, u8"quote", strlen (u8"quote")));
+
+  mpq_t num;
+  mpq_init (num);
+  p = make_exact_number (&heap, num);
+  collect (&heap, 1ULL << 20, (Object *[1]) {&p}, 1);
+  mpq_set_si (num, 2, 1);
+  q = make_exact_number (&heap, num);
+  exact_number_value (num, p);
+  ASSERT (mpq_cmp_si (num, 0, 1) == 0);  
+  mpq_clear (num);
   
   heap_destroy (&heap);
 }

@@ -77,6 +77,7 @@ heap_init (Heap *heap, size_t heap_size)
   heap->heap_size = heap_size;
   heap->mutation_table = mutation_table_create ();
   symbol_table_init (&heap->symbol_table);
+  resource_manager_init (&heap->resource_manager);
   obstack_init (&heap->stack);
   obstack_alignment_mask (&heap->stack) = ALIGNMENT_MASK;
   heap->stack_base = obstack_finish (&heap->stack);
@@ -93,6 +94,7 @@ heap_destroy (Heap *heap)
   obstack_free (&heap->stack, NULL);
   mutation_table_free (heap->mutation_table);
   symbol_table_destroy (&heap->symbol_table);
+  resource_manager_destroy (&heap->resource_manager);
   free (heap->start);
 }
 
@@ -142,6 +144,13 @@ process (Heap *heap, Object *object)
 {
   if (!is_pointer (*object) || is_in_heap (heap, (Pointer) *object))
     return;
+
+  if (is_unmanaged ((Pointer) *object))
+    {
+      resource_manager_mark (&heap->resource_manager, (Resource *) ((Pointer) *object - 1));
+      return;
+    }
+  
   *object = (Object) forward (heap, (Pointer) *object);
 }
 
@@ -171,15 +180,16 @@ void
 collect (Heap *restrict heap, size_t nursery_size, Object *roots[], size_t root_num)
 {
   Pointer old_start = (free_space (heap) < nursery_size / WORDSIZE) ? flip (heap) : NULL;
-  
   Pointer ref = heap->start;
   
+  resource_manager_begin_gc (&heap->resource_manager, old_start != NULL);
+
   if (old_start == NULL)
     mutation_table_do_for_each (heap->mutation_table, processor, heap);
   mutation_table_clear (heap->mutation_table);
 
   symbol_table_clear (&heap->symbol_table, old_start != NULL);
-
+  
   for (size_t i = 0; i < SYMBOL_COUNT; ++i)
     process (heap, &symbols[i]);
   
@@ -193,6 +203,8 @@ collect (Heap *restrict heap, size_t nursery_size, Object *roots[], size_t root_
     free (old_start);
 
   obstack_free (&heap->stack, heap->stack_base);
+
+  resource_manager_end_gc (&heap->resource_manager);
 }
 
 void

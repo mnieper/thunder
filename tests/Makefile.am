@@ -23,7 +23,7 @@ TEST_EXTENSIONS =
 LOG_COMPILER = $(LIBTOOL) --mode=execute $(VALGRIND)
 TESTS_ENVIRONMENT = @LOCALCHARSET_TESTS_ENVIRONMENT@
 
-check_PROGRAMS = number object symbol_table reader gc
+check_PROGRAMS = deque number object symbol_table reader gc
 check_SCRIPTS = test.sh
 TESTS = $(check_PROGRAMS) $(check_SCRIPTS)
 

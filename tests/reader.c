@@ -86,8 +86,9 @@ int main (int argc, char *argv[])
   ASSERT (check_datum (u8"\"string\"", is_string));
   ASSERT (check_datum (u8"symbol", is_symbol));
   ASSERT (check_datum (u8"()", is_null));
-  ASSERT (check_datum (u8"(#\\a . #\\b)", is_pair));
+  ASSERT (check_datum (u8"(1 . 2)", is_pair));
   ASSERT (check_datum (u8"'x", is_pair));
+  ASSERT (check_datum (u8"125", is_exact_number));
   
   /*
   ASSERT (check_number (u8"42", 10));

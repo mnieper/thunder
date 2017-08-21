@@ -37,6 +37,13 @@ is_pointer (Object object)
 }
 
 bool
+is_unmanaged (Pointer pointer)
+{
+  return (pointer[-1] & (OBJECT_TYPE_MASK | UNMANAGED_TYPE))
+    == (HEADER_TYPE | UNMANAGED_TYPE);
+}
+
+bool
 is_binary (Object header)
 {
   return (header & BINARY_TYPE) == BINARY_TYPE;
@@ -361,4 +368,28 @@ is_vector (Object object)
 {
   return (object & OBJECT_TYPE_MASK) == POINTER_TYPE
     && (((Pointer) object)[-1] & HEADER_TYPE_MASK) == VECTOR_TYPE;
+}
+
+/* Exact numbers */
+
+/* The value in Q is destroyed after calling this function. */
+Object
+make_exact_number (Heap *restrict heap, mpq_t q)
+{
+  Resource *res = resource_manager_allocate (&heap->resource_manager);
+  mpq_swap (RESOURCE_PAYLOAD (res), q);
+  return (Object) res | POINTER_TYPE;
+}
+
+bool
+is_exact_number (Object object)
+{
+  return (object & OBJECT_TYPE_MASK) == POINTER_TYPE
+    && (((Pointer) object)[-1] & HEADER_TYPE_MASK) == EXACT_NUMBER_TYPE;
+}
+  
+void
+exact_number_value (mpq_t q, Object num)
+{
+  mpq_set (q, *(mpq_t *) num);
 }

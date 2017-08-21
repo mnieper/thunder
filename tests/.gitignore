@@ -5,6 +5,7 @@
 /dummy.c
 /warn-on-use.h
 /test.sh
+/deque
 /gc
 /number
 /object
