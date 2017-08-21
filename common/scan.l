@@ -23,6 +23,9 @@
 /* FIXME: The scanner currently assumes that the underlying charset is
 ASCII-compatible.  This can be fixed by using UTF-8 codes directly. */
 
+/* TODO: Return meaningful string tokens instead of invalid for better
+   Bison error messages. */
+
 %top {
 #ifdef HAVE_CONFIG_H
 # include <config.h>
@@ -470,7 +473,7 @@ static bool
 set_exactness_prefix (yyscan_t restrict scanner, bool exact)
 {
   YY_EXTRA_TYPE context = yyget_extra (scanner);
-  if (context->exact_prefix || context->inexact_prefix)
+  if (context->exact_prefix || context->inexact_prefix || context->real_found)
     return false;
   if (exact)
     context->exact_prefix = true;

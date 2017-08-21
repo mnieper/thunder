@@ -35,20 +35,15 @@
 #include "unitypes.h"
 #include "vmcommon.h"
 
-// XXX
+static  Heap heap;
 
-/*
 bool
 check_number (uint8_t const *s, int radix)
 {
-  Syntax syntax = read_number (s, radix);
-  bool res = !syntax_isboolean (syntax);
-  syntax_free (syntax);
+  Object obj = read_number (&heap, s, strlen (s), radix);
+  bool res = !is_boolean (obj);
   return res;
 }
-*/
-
-static  Heap heap;
 
 bool
 check_datum (uint8_t *b, bool (* predicate) (Object obj))
@@ -92,15 +87,11 @@ int main (int argc, char *argv[])
   ASSERT (check_datum (u8"1.1", is_inexact_number));
   ASSERT (check_datum (u8"#i1/2", is_inexact_number));
   
-  /* TODO: Number tests */
-  
-  /*
   ASSERT (check_number (u8"42", 10));
   ASSERT (check_number (u8"1@1", 10));
   ASSERT (check_number (u8"1e3@2", 10));
   ASSERT (check_number (u8"3+3.4i", 10));
   ASSERT (check_number (u8"#e1", 10));
-
   ASSERT (check_number (u8"dead/beef", 16));
   ASSERT (check_number (u8"#xdead/beef", 10));
   
@@ -109,29 +100,6 @@ int main (int argc, char *argv[])
   ASSERT (!check_number (u8"#e#i4", 10));
   ASSERT (!check_number (u8"4#e", 10));
   ASSERT (!check_number (u8"dead/beef", 10));
-
-  ASSERT (check_syntax (u8"#false", syntax_isboolean));
-  ASSERT (check_syntax (u8"43", syntax_isrectangular));
-  ASSERT (check_syntax (u8";comment\n#true", syntax_isboolean));
-  ASSERT (check_syntax (u8"#|#|nested|#|#44", syntax_isrectangular));
-  ASSERT (check_syntax (u8"#\\alarm", syntax_ischaracter));
-  ASSERT (check_syntax (u8"#!fold-case #\\ALARM", syntax_ischaracter));
-  ASSERT (check_syntax (u8"#\\a", syntax_ischaracter));
-  ASSERT (check_syntax (u8"#\\x61", syntax_ischaracter));
-
-  ASSERT (check_syntax (u8"\"string\"", syntax_isstring));
-  ASSERT (check_syntax (u8"+soup+", syntax_issymbol));
-
-  ASSERT (check_syntax (u8"(1 . 2)", syntax_ispair));
-  ASSERT (check_syntax (u8"#(1 2 3)", syntax_isvector));
-  ASSERT (check_syntax (u8"#u8(0 1 2)", syntax_isbytevector));
-
-  ASSERT (check_syntax (u8"'x", syntax_ispair));
-
-  ASSERT (check_syntax (u8"#0=#(#0#)", syntax_isvector));
-  ASSERT (!check_syntax (u8"(#0=1 #0=2)", syntax_ispair));
-  ASSERT (check_syntax (u8"(#;#0=1 #0=2 #0#)", syntax_ispair));
-  */
-
+  
   heap_destroy (&heap);
 }
