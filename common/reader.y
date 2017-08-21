@@ -43,6 +43,8 @@
 #include "vmcommon.h"
 #include "xalloc.h"
 
+#define HEAP (yyget_extra (scanner)->heap)
+  
 #define YYLTYPE struct location
 
 #define obstack_chunk_alloc xmalloc
@@ -109,15 +111,16 @@ yyerror (YYLTYPE *lloc, void *scanner, char const *msg);
 
 %token END 0 "end of file"
 
+%token                  INVALID "invalid character"
 %token                  SHARPPAR "#("
-%token                  INVALID COMMAAT
+%token                  COMMAAT ",@"
 %token <boolean>        BOOLEAN
 %token <character>      CHARACTER
 %token <stack>          STRING IDENTIFIER
 %token <exact_number>   EXACT_NUMBER
 %token <inexact_number> INEXACT_NUMBER
 
-%type <object>   boolean character symbol string vector datum
+%type <object>   boolean character list symbol string vector datum abbreviation tail
 %type <elements> elements
 
 %destructor { mpq_clear ($$); }                 <exact_number>
@@ -141,9 +144,11 @@ start: datum
 
 datum: boolean
      | character
+     | list
      | string
      | symbol
      | vector
+     | abbreviation
      ;
 
 boolean: BOOLEAN
@@ -156,6 +161,16 @@ character: CHARACTER
 	       $$ = make_char ($1);
              }
 
+list: '(' ')'
+        {  
+	  $$ = make_null ();
+	}
+    | '(' datum tail
+        {
+	  $$ = cons (HEAP, $2, $3);
+	}
+    ;
+	  
 string: STRING
              {
 	       size_t n = obstack_object_size (&$1);
@@ -184,6 +199,38 @@ vector: "#(" elements ')'
 	    obstack_free (&$2.stack, NULL);
 	  }
 
+abbreviation: '\'' datum
+                {
+		  $$ = cons (HEAP, SYMBOL(QUOTE), $2);
+		}
+            | '`' datum
+                {
+		  $$ = cons (HEAP, SYMBOL(QUASIQUOTE), $2);
+		}
+            | ',' datum
+                {
+		  $$ = cons (HEAP, SYMBOL(UNQUOTE), $2);
+		}
+            | ",@" datum
+                {
+		  $$ = cons (HEAP, SYMBOL(UNQUOTE_SPLICING), $2);
+		}
+            ;
+
+tail: ')'
+        {
+	  $$ = make_null ();
+	}
+    | '.' datum ')'
+        {
+	  $$ = $2;
+	}
+    | datum tail
+        {
+	  $$ = cons (HEAP, $1, $2);
+	}
+    ;
+
 elements: %empty
             {
 	      $$.count = 0;
@@ -195,11 +242,14 @@ elements: %empty
 	      obstack_ptr_grow (&$1.stack, (void *) $2);
 	      $$ = $1;
 	    }
+
 %%
 
 void
 yyerror (Location *lloc, yyscan_t scanner, char const *msg)
 {
+  // XXX: remove me.
+  fprintf (stderr, "%s\n", msg);  
   Context context = yyget_extra (scanner);
   context->error_location = *lloc;
   context->error_message = xstrdup (msg);

@@ -20,6 +20,9 @@
  *      Marc Nieper-Wißkirchen
  */
 
+/* FIXME: The scanner currently assumes that the underlying charset is
+ASCII-compatible.  This can be fixed by using UTF-8 codes directly. */
+
 %top {
 #ifdef HAVE_CONFIG_H
 # include <config.h>
