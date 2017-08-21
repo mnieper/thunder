@@ -56,8 +56,12 @@ main (int argc, char *argv)
 
   mpfr_set_str (x, "1.448997445238699", 10, MPFR_RNDN);
   inexact_to_exact (q, x);
-  ASSERT (mpq_cmp_si (q, 1448997445238699LL, 1000000000000000LL) == 0);
+  ASSERT (mpq_cmp_si (q, 1448997445238699LL, 1000000000000000ULL) == 0);
 
+  mpfr_set_str (x, "0.14285714285714282", 10, MPFR_RNDN);
+  inexact_to_exact (q, x);
+  ASSERT (mpq_cmp_si (q, 14285714285714282LL, 100000000000000000ULL) == 0);
+  
   mpq_clear (q);
   mpfr_clear (x);
 }
