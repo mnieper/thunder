@@ -22,7 +22,7 @@ BUILT_SOURCES = reader.h scan.c
 
 noinst_LTLIBRARIES = libvmcommon.la
 libvmcommon_la_SOURCES = deque.c gc.c number.c object.c resource.c	\
-symbol_table.c version_etc_copyright.c xaligned_alloc.c reader.y	\
-scan.l
+symbol_table.c version_etc_copyright.c write.c xaligned_alloc.c		\
+reader.y scan.l
 libvmcommon_la_CPPFLAGS = -I$(top_builddir)/lib -I$(top_srcdir)/lib -I$(top_srcdir)/include
 libvmcommon_la_LIBADD = $(LTLIBINTL) $(LTLIBICONV) ../lib/libgnu.la -lgmp -lmpfr -lmpc -lm

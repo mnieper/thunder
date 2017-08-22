@@ -352,6 +352,9 @@ inexact_number_value (mpc_t x, Object num);
 void
 complex_init (mpc_t x);
 
+long int
+get_z_10exp (mpz_t quo, mpfr_t inexact);
+
 void
 inexact_to_exact (mpq_t exact, mpfr_t inexact);
 
@@ -391,6 +394,13 @@ enum symbol
 #undef ENTRY
     SYMBOL_COUNT
   };
+
+/* Scheme writer */
+
+void
+scheme_write (Object obj, FILE *out);
+
+/* Initial symbols */
 
 extern Object symbols[SYMBOL_COUNT];
 

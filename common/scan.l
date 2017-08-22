@@ -228,13 +228,13 @@ IDENTIFIER           {INITIAL}{SUBSEQUENT}*|{PECULIAR-IDENTIFIER}
 
   "."/{DELIMITER} |
   "."             return '.';
-  "."/.           return INVALID;
 
   {IDENTIFIER}/{DELIMITER} |
   {IDENTIFIER}             { 
                              obstack_init (&yylval->stack);
-                             obstack_grow (&yylval->stack, yytext, yyleng);                      
-                             return IDENTIFIER; 
+                             obstack_grow (&yylval->stack, yytext, yyleng);          
+			     /* TODO: Lowercase the symbol. */
+			     return IDENTIFIER; 
                            }
   {IDENTIFIER}/.           return INVALID;
 
@@ -369,6 +369,10 @@ IDENTIFIER           {INITIAL}{SUBSEQUENT}*|{PECULIAR-IDENTIFIER}
   <<EOF>>        return end_number (yyscanner, true);
   ""/{DELIMITER} return end_number (yyscanner, false);
   ""/.           return INVALID;
+}
+
+<INITIAL>{
+  "."/.           return INVALID;
 }
 
 <*>{

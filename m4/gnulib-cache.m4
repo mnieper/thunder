@@ -27,7 +27,7 @@
 
 
 # Specification in the form of a command-line invocation:
-#   gnulib-tool --import --local-dir=gl --lib=libgnu --source-base=lib --m4-base=m4 --doc-base=doc --tests-base=tests --aux-dir=build-aux --no-conditional-dependencies --libtool --macro-prefix=gl closeout error getopt-gnu hash hash-pjw-bare localcharset mbchar mbfile minmax obstack progname uniconv/u8-conv-from-enc uniconv/u8-strconv-to-enc unistr/u8-mbsnlen unistr/u8-mbtouc-unsafe unistr/u8-next unistr/u8-to-u32 unitypes uniwidth/width valgrind-tests version-etc xalloc xalloc-die xlist
+#   gnulib-tool --import --local-dir=gl --lib=libgnu --source-base=lib --m4-base=m4 --doc-base=doc --tests-base=tests --aux-dir=build-aux --no-conditional-dependencies --libtool --macro-prefix=gl closeout error getopt-gnu hash hash-pjw-bare localcharset mbchar mbfile minmax obstack progname uniconv/u32-conv-to-enc uniconv/u8-conv-from-enc uniconv/u8-conv-to-enc uniconv/u8-strconv-to-enc unistdio/ulc-fprintf unistr/u32-mbtouc-unsafe unistr/u8-mbsnlen unistr/u8-mbtouc-unsafe unistr/u8-next unistr/u8-to-u32 unitypes uniwidth/width valgrind-tests version-etc xalloc xalloc-die xlist xmalloca
 
 # Specification in the form of a few gnulib-tool.m4 macro invocations:
 gl_LOCAL_DIR([gl])
@@ -43,8 +43,12 @@ gl_MODULES([
   minmax
   obstack
   progname
+  uniconv/u32-conv-to-enc
   uniconv/u8-conv-from-enc
+  uniconv/u8-conv-to-enc
   uniconv/u8-strconv-to-enc
+  unistdio/ulc-fprintf
+  unistr/u32-mbtouc-unsafe
   unistr/u8-mbsnlen
   unistr/u8-mbtouc-unsafe
   unistr/u8-next
@@ -56,6 +60,7 @@ gl_MODULES([
   xalloc
   xalloc-die
   xlist
+  xmalloca
 ])
 gl_AVOID([])
 gl_SOURCE_BASE([lib])

@@ -30,12 +30,11 @@
 
 #include "localcharset.h"
 #include "macros.h"
-#include "reader.h"
 #include "uniconv.h"
 #include "unitypes.h"
 #include "vmcommon.h"
 
-static  Heap heap;
+static Heap heap;
 
 bool
 check_number (uint8_t const *s, int radix)
@@ -68,6 +67,8 @@ check_datum (uint8_t *b, bool (* predicate) (Object obj))
   return res;
 }
 
+#include "reader.h"
+
 int main (int argc, char *argv[])
 {
   setlocale (LC_ALL, "");
@@ -86,7 +87,8 @@ int main (int argc, char *argv[])
   ASSERT (check_datum (u8"125", is_exact_number));
   ASSERT (check_datum (u8"1.1", is_inexact_number));
   ASSERT (check_datum (u8"#i1/2", is_inexact_number));
-  
+  ASSERT (check_datum (u8".3", is_inexact_number));
+
   ASSERT (check_number (u8"42", 10));
   ASSERT (check_number (u8"1@1", 10));
   ASSERT (check_number (u8"1e3@2", 10));

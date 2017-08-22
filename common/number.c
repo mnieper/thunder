@@ -51,14 +51,22 @@ round_quotient (mpz_t q, mpz_t num, mpz_t den)
   mpz_clears (r, d, NULL);
 }
 
-void
-inexact_to_exact (mpq_t exact, mpfr_t inexact)
+long int
+get_z_10exp (mpz_t quo, mpfr_t inexact)
 {
-  // TODO: Document and simplify code.
-  mpz_t mant, quo, num, den, z;
+  if (mpfr_zero_p (inexact))
+    {
+      mpz_set_si (quo, 0);
+      return 0;
+    }
+
+  /* TODO: Document and simplify code. */
+  mpz_t mant, num, den, z;
+  mpq_t q;
   mpfr_t x, y, lg2;
   long int point;
-  mpz_inits (mant, quo, num, den, z, NULL);
+  mpz_inits (mant, num, den, z, NULL);
+  mpq_init (q);
   mpfr_inits (x, y, lg2, NULL);
   mpfr_set_ui (lg2, 2, MPFR_RNDN);
   mpfr_log10 (lg2, lg2, MPFR_RNDN);
@@ -73,15 +81,14 @@ inexact_to_exact (mpq_t exact, mpfr_t inexact)
       point = MAX (0, mpfr_get_si (x, MPFR_RNDU));
       mpz_ui_pow_ui (den, 10, point);
       round_quotient (quo, num, den);
-      mpz_mul (mpq_numref (exact), quo, den);
-      mpz_set_ui (mpq_denref (exact), 1);
-      mpfr_set_z (x, mpq_numref (exact),  MPFR_RNDN);
+      mpz_mul (z, quo, den);
+      mpfr_set_z (x, z,  MPFR_RNDN);
       if (mpfr_cmp (inexact, x) != 0)
 	{
 	  mpz_divexact_ui (den, den, 10);
 	  round_quotient (quo, num, den);
+	  ++point;
 	}
-      mpz_mul (mpq_numref (exact), quo, den);
     }
   else
     {
@@ -92,20 +99,44 @@ inexact_to_exact (mpq_t exact, mpfr_t inexact)
       mpz_ui_pow_ui (z, 10, -point);
       mpz_mul (num, z, mant);
       round_quotient (quo, num, den);
-      mpz_set (mpq_numref (exact), quo);
-      mpz_set (mpq_denref (exact), z);
-      mpq_canonicalize (exact);
-      mpfr_set_q (x, exact, MPFR_RNDN);
+      mpz_set (mpq_numref (q), quo);
+      mpz_set (mpq_denref (q), z);
+      mpq_canonicalize (q);
+      mpfr_set_q (x, q, MPFR_RNDN);
       if (mpfr_cmp (inexact, x) != 0)
 	{
 	  mpz_mul_ui (z, z, 10);
 	  mpz_mul_ui (num, num, 10);
 	  round_quotient (quo, num, den);
-	}
+	  point--;
+	}      
+    }
+  mpz_clears (mant, num, den, z, NULL);
+  mpq_clear (q);
+  mpfr_clears (x, y, lg2, NULL);
+
+  return point;
+}
+
+void
+inexact_to_exact (mpq_t exact, mpfr_t inexact)
+{
+  mpz_t quo;
+  mpz_init (quo);
+  
+  long int point = get_z_10exp (quo, inexact);
+  if (point > 0)
+    {
+      mpz_ui_pow_ui (mpq_numref (exact), 10, point);
+      mpz_mul (mpq_numref (exact), mpq_numref (exact), quo);
+      mpz_set_si (mpq_denref (exact), 1);
+    }
+  else
+    {
+      mpz_ui_pow_ui (mpq_denref (exact), 10, -point);
       mpz_set (mpq_numref (exact), quo);
-      mpz_set (mpq_denref (exact), z);
       mpq_canonicalize (exact);
     }
-  mpz_clears (mant, quo, num, den, z, NULL);
-  mpfr_clears (x, y, lg2, NULL);
+
+  mpz_clear (quo);
 }

@@ -11,4 +11,5 @@
 /object
 /reader
 /symbol_table
+/write
 /unused-parameter.h

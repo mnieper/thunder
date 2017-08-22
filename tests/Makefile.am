@@ -20,10 +20,10 @@ AM_CPPFLAGS = -I$(top_srcdir)/include -I$(top_srcdir)/lib -I$(top_builddir)/lib 
 LDADD = ../common/libvmcommon.la
 
 TEST_EXTENSIONS =
-LOG_COMPILER = $(LIBTOOL) --mode=execute $(VALGRIND)
+LOG_COMPILER = $(LIBTOOL) --mode=execute $(VALGRIND) --suppressions=../lib/malloca.valgrind
 TESTS_ENVIRONMENT = @LOCALCHARSET_TESTS_ENVIRONMENT@
 
-check_PROGRAMS = deque number object symbol_table reader gc
+check_PROGRAMS = deque number object symbol_table reader write gc
 check_SCRIPTS = test.sh
 TESTS = $(check_PROGRAMS) $(check_SCRIPTS)
 
