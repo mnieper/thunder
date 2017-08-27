@@ -88,4 +88,6 @@
       (deque_remove (deque, (deque)->tmp)),			\
       (deque)->tmp))
 
+#define deque_destroy(deque)
+
 #endif /* DEQUE_H_INCLUDED */

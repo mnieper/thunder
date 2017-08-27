@@ -56,7 +56,7 @@ ASCII-compatible.  This can be fixed by using UTF-8 codes directly. */
 %option bison-locations
 %option header-file="scan.h"
 
-%x SC_STRING
+%x SC_STRING SC_SYMBOL
 %x BINARY OCTAL DECIMAL HEXADECIMAL
 
 %{
@@ -200,22 +200,34 @@ PECULIAR-IDENTIFIER  {EXPLICIT-SIGN}|"..."
 IDENTIFIER           {INITIAL}{SUBSEQUENT}*|{PECULIAR-IDENTIFIER}
 
 %%
-  int radix = yyextra->radix;
-  reset (yyscanner, radix != 0);
-  switch (radix)
+  if (yyextra->scan_symbol)
+    BEGIN (SC_SYMBOL);
+  else
     {
-    case 2:
-      BEGIN (BINARY);
-      break;
-    case 8:
-      BEGIN (OCTAL);
-    case 10:
-      BEGIN (DECIMAL);
-      break;
-    case 16:
-      BEGIN (HEXADECIMAL);
-      break;
+      int radix = yyextra->radix;
+      reset (yyscanner, radix != 0);
+      switch (radix)
+	{
+	case 2:
+	  BEGIN (BINARY);
+	  break;
+	case 8:
+	  BEGIN (OCTAL);
+	case 10:
+	  BEGIN (DECIMAL);
+	  break;
+	case 16:
+	  BEGIN (HEXADECIMAL);
+	  break;
+	}
     }
+
+<SC_SYMBOL>{
+  {IDENTIFIER}   return ACCEPT;
+  {IDENTIFIER}/. |
+  {ANY-CHAR}     |
+  <<EOF>>        return ABORT;
+}
 
 <INITIAL>{
   ",@"   return COMMAAT;
@@ -278,11 +290,11 @@ IDENTIFIER           {INITIAL}{SUBSEQUENT}*|{PECULIAR-IDENTIFIER}
 }
 
 <SC_STRING>{
-  \"           return STRING;
+  \"           yy_pop_state (yyscanner); return STRING;
   {UTF8-CHAR}  obstack_grow (&yylval->stack, yytext, yyleng);
   \\\"         obstack_1grow (&yylval->stack, '"');
   \\\\         obstack_1grow (&yylval->stack, '\\');
-  \\{ANY-CHAR} obstack_free (&yylval->stack, NULL); return INVALID;
+  \\{ANY-CHAR} obstack_free (&yylval->stack, NULL); yy_pop_state (yyscanner); return INVALID;
 }
 
 <INITIAL,BINARY,OCTAL,DECIMAL,HEXADECIMAL>{
@@ -368,7 +380,7 @@ IDENTIFIER           {INITIAL}{SUBSEQUENT}*|{PECULIAR-IDENTIFIER}
 
   <<EOF>>        return end_number (yyscanner, true);
   ""/{DELIMITER} return end_number (yyscanner, false);
-  ""/.           return INVALID;
+  ""/.           if (!yyextra->radix) yy_pop_state (yyscanner); return INVALID;
 }
 
 <INITIAL>{
@@ -396,14 +408,14 @@ end_number (yyscan_t restrict scanner, bool eof)
 {
   YY_EXTRA_TYPE context = yyget_extra (scanner);
   
+  if (!context->radix)
+    yy_pop_state (scanner);
+
   if (!eof && context->radix)
     return INVALID;
   
   if (!context->real_found)
     return INVALID;
-
-  if (!context->radix)
-    yy_pop_state (scanner);
 
   YYSTYPE *restrict lval = yyget_lval (scanner);
 
@@ -453,7 +465,6 @@ static void
 reset (yyscan_t restrict scanner, bool in_number)
 {
   YY_EXTRA_TYPE context = yyget_extra (scanner);
-  YYSTYPE *restrict lval = yyget_lval (scanner);
   context->in_number = in_number;
   context->exact_prefix = false;
   context->inexact_prefix = false;

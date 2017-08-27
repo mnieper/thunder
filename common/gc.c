@@ -83,7 +83,7 @@ heap_init (Heap *heap, size_t heap_size)
   heap->stack_base = obstack_finish (&heap->stack);
   flip (heap);
 #define ENTRY(id, name)			\
-  symbols[id] = make_symbol (heap, name, strlen (name));
+  symbols[SYMBOL_##id] = make_symbol (heap, name, strlen (name));
   SYMBOLS
 #undef ENTRY
 }

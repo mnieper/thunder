@@ -60,7 +60,10 @@ resource_manager_destroy (ResourceManager *rm)
 #define ENTRY(id, type, init, destroy)			\
   resource_list_destroy (id, &rm->nursery_list(id));	\
   resource_list_destroy (id, &rm->heap_list(id));	\
-  resource_list_destroy (id, &rm->free_list(id));
+  resource_list_destroy (id, &rm->free_list(id));	\
+  deque_destroy (&rm->nursery_list(id));		\
+  deque_destroy (&rm->heap_list(id));			\
+  deque_destroy (&rm->free_list(id));	    
   RESOURCES
 #undef ENTRY
 }

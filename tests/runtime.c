@@ -21,37 +21,34 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
+#include <stdbool.h>
+#include <stddef.h>
+#include <string.h>
 
-#include "deque.h"
+#include "vmcommon.h"
 #include "macros.h"
 
 int
 main (int argc, char *argv)
 {
-  typedef struct entry Entry;
-  struct entry
-  {
-    int value;
-    DEQUE_ENTRY(entry);
-  };
+  Heap heap;
+  heap_init (&heap, 1ULL << 20);
 
-  DEQUE(entry) q;
-  deque_init (&q);
+  Object p = cons (&heap,
+		   cons (&heap, make_char ('a'), make_char ('b')),
+		   make_char ('c'));
+  ASSERT (!is_list (p));
+
+  p = cons (&heap, make_char ('a'),
+	    cons (&heap, make_char ('b'), make_null ()));
+  ASSERT (is_list (p));
+  ASSERT (length (p) == 2);
+
+  ASSERT (is_list (make_null ()));
+  ASSERT (length (make_null ()) == 0);
+
+  p = exact_number (&heap, -8, 2);
+  ASSERT (fixnum (p) == -4);
   
-  ASSERT (deque_is_empty (&q));
-
-  Entry e1 = { .value = 1 };
-  deque_insert (&q, &e1);
-  ASSERT (!deque_is_empty (&q));
-
-  DEQUE(entry) p;
-  deque_init (&p);
-  deque_concat (&p, &q);
-  ASSERT (deque_is_empty (&q));
-  ASSERT (!deque_is_empty (&p));
-
-  ASSERT (deque_pop (&p) == &e1);
-  ASSERT (deque_is_empty (&p));
-
-  deque_destroy (&p);
+  heap_destroy (&heap);
 }

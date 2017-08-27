@@ -77,21 +77,23 @@ main (int argc, char *argv)
   ASSERT (is_char (vector_ref (p, 2)));
   ASSERT (vector_length (p) == 3);
 
-  mpq_t q;
-  mpq_init (q);
-  p = make_exact_number (&heap, q);
+  mpq_t r;
+  mpq_t *q;
+  mpq_init (r);
+  p = make_exact_number (&heap, r);
   ASSERT (is_exact_number (p));
-  exact_number_value (q, p);
-  ASSERT (mpq_cmp_si (q, 0, 1) == 0);
-  mpq_clear (q);
-      
+  q = exact_number_value (p);
+  ASSERT (mpq_cmp_si (*q, 0, 1) == 0);
+  mpq_clear (r);
+  
   mpc_t x;
+  mpc_t *y;
   mpc_init2 (x, 53);
   mpc_set_ui (x, 1, MPC_RNDNN);
   p = make_inexact_number (&heap, x);
   ASSERT (is_inexact_number (p));
-  inexact_number_value (x, p);
-  ASSERT (mpc_cmp_si (x, 1) == 0);
+  y = inexact_number_value (p);
+  ASSERT (mpc_cmp_si (*y, 1) == 0);
   mpc_clear (x);
       
   heap_destroy (&heap);

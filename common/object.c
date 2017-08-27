@@ -20,7 +20,11 @@
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include <unitypes.h>
+#include <stddef.h>
+
+#include "error.h"
+#include "unistr.h"
+#include "unitypes.h"
 
 #include "vmcommon.h"
 
@@ -183,6 +187,25 @@ stack_finish (Heap *heap)
 }
 
 Object
+make_undefined ()
+{
+  return UNDEFINED_TYPE;
+}
+
+bool
+is_undefined (Object object)
+{
+  return (object & IMMEDIATE_TYPE_MASK) == UNDEFINED_TYPE;
+}
+
+void
+check_defined (Object obj)
+{
+  if (is_undefined (obj))
+    error (EXIT_FAILURE, 0, "attempt to reference undefined variable");
+}
+
+Object
 make_null ()
 {
   return NULL_TYPE;
@@ -262,6 +285,30 @@ cdr (Object pair)
   return ((Pointer) pair)[1];
 }
 
+Object
+cadr (Object pair)
+{
+  return car (cdr (pair));
+}
+
+Object
+cddr (Object pair)
+{
+  return cdr (cdr (pair));
+}
+
+void
+set_car (Object pair, Object car)
+{
+  ((Pointer) pair)[0] = car;
+}
+
+void
+set_cdr (Object pair, Object cdr)
+{
+  ((Pointer) pair)[1] = cdr;
+}
+
 bool
 is_pair (Object object)
 {
@@ -311,6 +358,20 @@ is_string (Object object)
 }
 
 Object
+string (Heap *heap, Object chars)
+{
+  int n;
+  stack_grow (heap, STRING_TYPE);
+  stack_grow (heap, 0);
+  for (n = 0; !is_null (chars); chars = cdr (chars), ++n)
+    stack_ucs4_grow (heap, char_value (car (chars)));
+  stack_align (heap);
+  Object str = stack_finish (heap) | POINTER_TYPE;
+  ((Pointer) str)[0] = n * sizeof (ucs4_t);
+  return str;  
+}
+
+Object
 make_symbol (Heap *heap, uint8_t *s, size_t len)
 {
   stack_grow (heap, SYMBOL_TYPE);
@@ -338,6 +399,24 @@ size_t
 symbol_length (Object sym)
 {
   return ((Pointer) sym)[0] / sizeof (uint8_t);
+}
+
+Object
+symbol (Heap *heap, Object chars)
+{
+  int n;
+  uint8_t s[6];
+  stack_grow (heap, SYMBOL_TYPE);
+  stack_grow (heap, 0);
+  for (n = 0; !is_null (chars); chars = cdr (chars), ++n)
+    {
+      size_t len = u8_uctomb (s, char_value (car (chars)), 6);
+      stack_utf8_grow (heap, s, len);
+    }
+  stack_align (heap);
+  Object sym = stack_finish (heap) | POINTER_TYPE;
+  ((Pointer) sym)[0] = n * sizeof (uint8_t);
+  return symbol_table_intern (&heap->symbol_table, sym, false);
 }
 
 Object
@@ -395,10 +474,10 @@ is_exact_number (Object object)
     && (((Pointer) object)[-1] & HEADER_TYPE_MASK) == EXACT_NUMBER_TYPE;
 }
   
-void
-exact_number_value (mpq_t q, Object num)
+mpq_t *
+exact_number_value (Object num)
 {
-  mpq_set (q, *(mpq_t *) num);
+  return (mpq_t *) num;
 }
 
 /* The value in X is destroyed after calling this function. */
@@ -417,9 +496,9 @@ is_inexact_number (Object object)
   return (object & OBJECT_TYPE_MASK) == POINTER_TYPE
     && (((Pointer) object)[-1] & HEADER_TYPE_MASK) == INEXACT_NUMBER_TYPE;
 }
-  
-void
-inexact_number_value (mpc_t x, Object num)
+
+mpc_t *
+inexact_number_value (Object num)
 {
-  mpc_set (x, *(mpc_t *) num, MPC_RNDNN);
+  return (mpc_t *) num;
 }

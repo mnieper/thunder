@@ -22,7 +22,7 @@
 # include <config.h>
 #endif
 
-#include "deque.h"
+#include "stack.h"
 #include "macros.h"
 
 int
@@ -32,26 +32,20 @@ main (int argc, char *argv)
   struct entry
   {
     int value;
-    DEQUE_ENTRY(entry);
+    STACK_ENTRY(entry);
   };
 
-  DEQUE(entry) q;
-  deque_init (&q);
+  STACK(entry) s;
+  stack_init (&s);
   
-  ASSERT (deque_is_empty (&q));
+  ASSERT (stack_is_empty (&s));
 
   Entry e1 = { .value = 1 };
-  deque_insert (&q, &e1);
-  ASSERT (!deque_is_empty (&q));
+  stack_push (&s, e1);
+  ASSERT (!stack_is_empty (&s));
 
-  DEQUE(entry) p;
-  deque_init (&p);
-  deque_concat (&p, &q);
-  ASSERT (deque_is_empty (&q));
-  ASSERT (!deque_is_empty (&p));
+  ASSERT (stack_pop (&s).value == e1.value);
+  ASSERT (stack_is_empty (&s));
 
-  ASSERT (deque_pop (&p) == &e1);
-  ASSERT (deque_is_empty (&p));
-
-  deque_destroy (&p);
+  stack_destroy (&s);
 }

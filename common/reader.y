@@ -99,8 +99,9 @@ struct context
     };
     Object datum;
   };
-  Location error_location;
+  Location location;
   char *error_message;
+  bool scan_symbol;
 };
 typedef struct context *restrict Context;
 #define YY_EXTRA_TYPE Context
@@ -112,6 +113,7 @@ yyerror (YYLTYPE *lloc, void *scanner, char const *msg);
 %token END 0 "end of file"
 
 %token                  INVALID "invalid character"
+%token                  ACCEPT ABORT
 %token                  SHARPPAR "#("
 %token                  COMMAAT ",@"
 %token <boolean>        BOOLEAN
@@ -131,9 +133,18 @@ yyerror (YYLTYPE *lloc, void *scanner, char const *msg);
 
 %%
 
-start: datum
+start: ACCEPT
+         {
+	   YYACCEPT;
+	 }
+     | ABORT
+         {
+	   YYABORT;
+	 }
+     | datum
          {
 	   yyget_extra (scanner)->datum = $1;
+	   yyget_extra (scanner)->location = @1;
 	   YYACCEPT;
 	 }
      | %empty
@@ -218,19 +229,19 @@ vector: "#(" elements ')'
 
 abbreviation: '\'' datum
                 {
-		  $$ = cons (HEAP, SYMBOL(QUOTE), $2);
+		  $$ = cons (HEAP, SYMBOL(QUOTE), cons (HEAP, $2, make_null ()));
 		}
             | '`' datum
                 {
-		  $$ = cons (HEAP, SYMBOL(QUASIQUOTE), $2);
+		  $$ = cons (HEAP, SYMBOL(QUASIQUOTE), cons (HEAP, $2, make_null ()));
 		}
             | ',' datum
                 {
-		  $$ = cons (HEAP, SYMBOL(UNQUOTE), $2);
+		  $$ = cons (HEAP, SYMBOL(UNQUOTE), cons (HEAP, $2, make_null ()));
 		}
             | ",@" datum
                 {
-		  $$ = cons (HEAP, SYMBOL(UNQUOTE_SPLICING), $2);
+		  $$ = cons (HEAP, SYMBOL(UNQUOTE_SPLICING), cons (HEAP, $2, make_null ()));
 		}
             ;
 
@@ -265,21 +276,23 @@ elements: %empty
 void
 yyerror (Location *lloc, yyscan_t scanner, char const *msg)
 {
-  // XXX: remove me.
-  fprintf (stderr, "%s\n", msg);  
   Context context = yyget_extra (scanner);
-  context->error_location = *lloc;
+  context->location = *lloc;
   context->error_message = xstrdup (msg);
 }
 
 void
-context_init (Context context, Heap *heap, int radix, FILE *in)
+context_init (Context context, Heap *heap, int radix, bool scan_symbol, FILE *in)
 {
-  mpq_init (context->rational);
-  mpfr_init (context->real);
-  mpfr_init (context->imag);
+  if (!scan_symbol)
+    {
+      mpq_init (context->rational);
+      mpfr_init (context->real);
+      mpfr_init (context->imag);
+    }
   context->heap = heap;
   context->radix = radix;
+  context->scan_symbol = scan_symbol;
   if (in != NULL)
     mbf_init (context->in, in);
 }
@@ -287,17 +300,38 @@ context_init (Context context, Heap *heap, int radix, FILE *in)
 void
 context_destroy (Context context)
 {
-  mpq_clear (context->rational);
-  mpfr_clear (context->real);
-  mpfr_clear (context->imag);
+  if (!context->scan_symbol)
+    {
+      mpq_clear (context->rational);
+      mpfr_clear (context->real);
+      mpfr_clear (context->imag);
+    }
 }
 
+bool
+parse_symbol (uint8_t const *bytes, size_t length)
+{
+  yyscan_t scanner;
+  struct context context;
+  context_init (&context, NULL, 0, true, NULL);
+  yylex_init_extra (&context, &scanner);
+  YY_BUFFER_STATE buffer = yy_scan_bytes (bytes, length, scanner);
+  yyset_debug (yydebug, scanner);
+  int res = yyparse (scanner);
+  if (res == 2)
+    xalloc_die ();
+  yy_delete_buffer (buffer, scanner);
+  yylex_destroy (scanner);
+  context_destroy (&context);
+  return res == 0;
+}
+  
 Object
 read_number (Heap *heap, uint8_t const *bytes, size_t length, int radix)
 {
   yyscan_t scanner;
   struct context context;
-  context_init (&context, heap, radix, NULL);
+  context_init (&context, heap, radix, false, NULL);
   yylex_init_extra (&context, &scanner);
   YY_BUFFER_STATE buffer = yy_scan_bytes (bytes, length, scanner);
   yyset_debug (yydebug, scanner);
@@ -321,7 +355,7 @@ reader_init (Reader *restrict reader, Heap *heap, FILE *in)
 {
   
   Context context = XMALLOC (struct context);
-  context_init (context, heap, 0, in);
+  context_init (context, heap, 0, false, in);
   yylex_init_extra (context, &reader->scanner);
   yyset_debug (yydebug, reader->scanner);
   yyset_in (in, reader->scanner);
@@ -337,16 +371,16 @@ reader_destroy (Reader const *restrict reader)
 }
 
 bool
-reader_read (Reader const *reader, Object *restrict object, Location *lloc, char **message)
+reader_read (Reader const *reader, Object *restrict object, Location *lloc, char const **message)
 {
   Context context = yyget_extra (reader->scanner);
   int res = yyparse (reader->scanner);
   if (res == 2)
     xalloc_die ();
+  if (lloc != NULL)
+    *lloc = context->location;
   if (res == 1)
     {
-      if (lloc != NULL)
-	*lloc = context->error_location;
       if (message != NULL) {
 	*message = context->error_message;
       } else {

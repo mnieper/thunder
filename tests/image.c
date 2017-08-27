@@ -21,37 +21,46 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
+#include <string.h>
 
-#include "deque.h"
 #include "macros.h"
+#include "vmcommon.h"
+
+bool
+test_image (Heap *heap, char *s)
+{
+  FILE *in = fmemopen (s, strlen (s), "r");
+  Object e = load (heap, in, NULL);
+  fclose (in);
+
+  char *buf;
+  size_t n;
+  
+  FILE *out = open_memstream (&buf, &n);
+  dump (e, out);
+  fclose (out);
+
+  bool res = strcmp (s, buf) == 0;
+  free (buf);
+  return res;
+};
 
 int
 main (int argc, char *argv)
 {
-  typedef struct entry Entry;
-  struct entry
-  {
-    int value;
-    DEQUE_ENTRY(entry);
-  };
+  Heap heap;
+  heap_init (&heap, 1ULL << 24);
 
-  DEQUE(entry) q;
-  deque_init (&q);
+  ASSERT(test_image (&heap, "'symbol\n"));
+  ASSERT(test_image (&heap,
+		     "(define $0 \"string\")\n"
+		     "$0\n"));
+  ASSERT(test_image (&heap,
+		     "(define $1 (cons #f #f))\n"
+		     "(define $0 (vector $1 $1))\n"
+		     "(set-car! $1 $0)\n"
+		     "(set-cdr! $1 $1)\n"
+                     "$0\n"));
   
-  ASSERT (deque_is_empty (&q));
-
-  Entry e1 = { .value = 1 };
-  deque_insert (&q, &e1);
-  ASSERT (!deque_is_empty (&q));
-
-  DEQUE(entry) p;
-  deque_init (&p);
-  deque_concat (&p, &q);
-  ASSERT (deque_is_empty (&q));
-  ASSERT (!deque_is_empty (&p));
-
-  ASSERT (deque_pop (&p) == &e1);
-  ASSERT (deque_is_empty (&p));
-
-  deque_destroy (&p);
+  heap_destroy (&heap);
 }

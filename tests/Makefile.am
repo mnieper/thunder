@@ -16,19 +16,19 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-AM_CPPFLAGS = -I$(top_srcdir)/include -I$(top_srcdir)/lib -I$(top_builddir)/lib -I$(top_srcdir)/common
+AM_CPPFLAGS = -I$(top_srcdir)/include -I$(top_builddir)/lib -I$(top_srcdir)/common
 LDADD = ../common/libvmcommon.la
 
 TEST_EXTENSIONS =
-LOG_COMPILER = $(LIBTOOL) --mode=execute $(VALGRIND) --suppressions=../lib/malloca.valgrind
+LOG_COMPILER = $(LIBTOOL) --mode=execute $(VALGRIND) --suppressions=$(top_builddir)/lib/malloca.valgrind
 TESTS_ENVIRONMENT = @LOCALCHARSET_TESTS_ENVIRONMENT@
 
-check_PROGRAMS = deque number object symbol_table reader write gc
+check_PROGRAMS = deque image number object symbol_table reader runtime stack write gc
 check_SCRIPTS = test.sh
 TESTS = $(check_PROGRAMS) $(check_SCRIPTS)
 
 test.sh:
-	echo "$(LIBTOOL) --mode=execute $(VALGRIND) ../src/thunder --version | grep \"Thunder\"" > test.sh
-	chmod a+x test.sh
+	echo "$(LIBTOOL) --mode=execute $(VALGRIND) ../src/thunder --version | grep \"Thunder\"" > $@
+	chmod a+x $@
 
 CLEANFILES = test.sh

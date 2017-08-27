@@ -71,9 +71,10 @@ main (int argc, char *argv)
   collect (&heap, 1ULL << 20, (Object *[1]) {&p}, 1);
   mpq_set_si (num, 2, 1);
   q = make_exact_number (&heap, num);
-  exact_number_value (num, p);
-  ASSERT (mpq_cmp_si (num, 0, 1) == 0);  
+  mpq_t *r;
+  r = exact_number_value (p);
+  ASSERT (mpq_cmp_si (*r, 0, 1) == 0);  
   mpq_clear (num);
-  
+
   heap_destroy (&heap);
 }

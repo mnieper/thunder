@@ -7,9 +7,12 @@
 /test.sh
 /deque
 /gc
+/image
 /number
 /object
 /reader
+/runtime
+/stack
 /symbol_table
 /write
 /unused-parameter.h

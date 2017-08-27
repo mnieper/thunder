@@ -38,10 +38,17 @@
   ENTRY (QUOTE, u8"quote")				\
   ENTRY (QUASIQUOTE, u8"quasiquote")			\
   ENTRY (UNQUOTE, u8"unquote")				\
-  ENTRY (UNQUOTE_SPLICING, u8"unquote-splicing")
+  ENTRY (UNQUOTE_SPLICING, u8"unquote-splicing")	\
+  ENTRY (DEFINE, u8"define")				\
+  ENTRY (CONS, u8"cons")				\
+  ENTRY (SET_CAR, u8"set-car!")				\
+  ENTRY (SET_CDR, u8"set-cdr!")				\
+  ENTRY (VECTOR, u8"vector")				\
+  ENTRY (VECTOR_SET, u8"vector-set!")			\
+  ENTRY (STRING, u8"string")				\
+  ENTRY (SYMBOL, u8"symbol")
 
-#define SYMBOL(id)				\
-  symbols[id]
+#define SYMBOL(id) symbols[SYMBOL_##id]
 
 #define RESOURCES					\
   ENTRY (EXACT_NUMBER, mpq_t, mpq_init, mpq_clear)	\
@@ -84,10 +91,11 @@
 #define IMMEDIATE_PAYLOAD_SHIFT   8
 #define MAKE_IMMEDIATE_TYPE(type) (type * (2 * WORDSIZE) | IMMEDIATE_TYPE)
 
-#define BOOLEAN_TYPE MAKE_IMMEDIATE_TYPE (0)
-#define CHAR_TYPE    MAKE_IMMEDIATE_TYPE (1)
-#define NULL_TYPE    MAKE_IMMEDIATE_TYPE (2)
-#define EOF_TYPE     MAKE_IMMEDIATE_TYPE (3)
+#define BOOLEAN_TYPE   MAKE_IMMEDIATE_TYPE (0)
+#define CHAR_TYPE      MAKE_IMMEDIATE_TYPE (1)
+#define NULL_TYPE      MAKE_IMMEDIATE_TYPE (2)
+#define EOF_TYPE       MAKE_IMMEDIATE_TYPE (3)
+#define UNDEFINED_TYPE MAKE_IMMEDIATE_TYPE (4)
 
 void *
 xaligned_alloc (size_t alignment, size_t size);
@@ -234,13 +242,32 @@ heap_init (Heap *heap, size_t heap_size);
 void
 heap_destroy (Heap *heap);
 
+/* Garbage collector */
+
 void
 collect (Heap *heap, size_t nursery_size, Object *roots[], size_t root_num);
 
 void
 mutate (Heap *heap, Pointer field, Object value);
 
+/* Dumping and loading images */
+
+void
+dump (Object obj, FILE *out);
+
+Object
+load (Heap *heap, FILE *out, char const *filename);
+
 /* Scheme objects */
+
+Object
+make_undefined ();
+
+bool
+is_undefined ();
+
+void
+check_defined (Object obj);
 
 Object
 make_null ();
@@ -281,6 +308,18 @@ car (Object pair);
 Object
 cdr (Object pair);
 
+Object
+cadr (Object pair);
+
+Object
+cddr (Object pair);
+
+void
+set_car (Object pair, Object car);
+
+void
+set_cdr (Object pair, Object cdr);
+
 bool
 is_pair (Object object);
 
@@ -303,6 +342,9 @@ bool
 is_string (Object object);
 
 Object
+string (Heap *heap, Object chars);
+
+Object
 make_symbol (Heap *heap, uint8_t *s, size_t len);
 
 bool
@@ -313,6 +355,9 @@ symbol_bytes (Object symbol);
 
 size_t
 symbol_length (Object symbol);
+
+Object
+symbol (Heap *heap, Object chars);
 
 Object
 make_vector (Heap *heap, size_t length, Object object);
@@ -335,8 +380,8 @@ make_exact_number (Heap *restrict heap, mpq_t q);
 bool
 is_exact_number (Object object);
 
-void
-exact_number_value (mpq_t q, Object num);
+mpq_t *
+exact_number_value (Object num);
 
 Object
 make_inexact_number (Heap *restrict heap, mpc_t x);
@@ -344,8 +389,21 @@ make_inexact_number (Heap *restrict heap, mpc_t x);
 bool
 is_inexact_number (Object object);
 
-void
-inexact_number_value (mpc_t x, Object num);
+mpc_t *
+inexact_number_value (Object num);
+
+/* Runtime */
+bool
+is_list (Object obj);
+
+size_t
+length (Object list);
+
+Object
+exact_number (Heap *heap, long int n, unsigned long int d);
+
+int
+fixnum (Object number);
 
 /* Numbers */
 
@@ -373,6 +431,9 @@ typedef struct location
   int last_column;
 } Location;
 
+bool
+parse_symbol (uint8_t const *bytes, size_t length);
+
 Object
 read_number (Heap *heap, uint8_t const *bytes, size_t length, int radix);
 
@@ -383,13 +444,14 @@ void
 reader_destroy (Reader const *restrict reader);
 
 bool
-reader_read (Reader const *restrict reader, Object *restrict object, Location *lloc, char **message);
+reader_read (Reader const *restrict reader, Object *restrict object, Location *lloc,
+	     char const **message);
 
 typedef enum symbol Symbol;
 enum symbol
   {
 #define ENTRY(id, name)			\
-    id,
+    SYMBOL_##id,
     SYMBOLS
 #undef ENTRY
     SYMBOL_COUNT
@@ -398,7 +460,13 @@ enum symbol
 /* Scheme writer */
 
 void
+write_char (ucs4_t c, FILE *out);
+
+void
 scheme_write (Object obj, FILE *out);
+
+char *
+object_get_str (Object obj);
 
 /* Initial symbols */
 

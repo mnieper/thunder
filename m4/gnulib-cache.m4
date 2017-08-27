@@ -27,27 +27,31 @@
 
 
 # Specification in the form of a command-line invocation:
-#   gnulib-tool --import --local-dir=gl --lib=libgnu --source-base=lib --m4-base=m4 --doc-base=doc --tests-base=tests --aux-dir=build-aux --no-conditional-dependencies --libtool --macro-prefix=gl closeout error getopt-gnu hash hash-pjw-bare localcharset mbchar mbfile minmax obstack progname uniconv/u32-conv-to-enc uniconv/u8-conv-from-enc uniconv/u8-conv-to-enc uniconv/u8-strconv-to-enc unistdio/ulc-fprintf unistr/u32-mbtouc-unsafe unistr/u8-mbsnlen unistr/u8-mbtouc-unsafe unistr/u8-next unistr/u8-to-u32 unitypes uniwidth/width valgrind-tests version-etc xalloc xalloc-die xlist xmalloca
+#   gnulib-tool --import --local-dir=gl --lib=libgnu --source-base=lib --m4-base=m4 --doc-base=doc --tests-base=tests --aux-dir=build-aux --no-conditional-dependencies --libtool --macro-prefix=gl bitrotate closeout error getopt-gnu hash hash-pjw-bare linkedhash-list localcharset mbchar mbfile minmax obstack progname uniconv/u32-conv-from-enc uniconv/u32-conv-to-enc uniconv/u8-conv-from-enc uniconv/u8-conv-to-enc uniconv/u8-strconv-to-enc unistdio/ulc-fprintf unistr/u32-chr unistr/u32-mbtouc-unsafe unistr/u8-mbsnlen unistr/u8-mbtouc-unsafe unistr/u8-next unistr/u8-to-u32 unitypes uniwidth/width valgrind-tests version-etc xalloc xalloc-die xlist xmalloca
 
 # Specification in the form of a few gnulib-tool.m4 macro invocations:
 gl_LOCAL_DIR([gl])
 gl_MODULES([
+  bitrotate
   closeout
   error
   getopt-gnu
   hash
   hash-pjw-bare
+  linkedhash-list
   localcharset
   mbchar
   mbfile
   minmax
   obstack
   progname
+  uniconv/u32-conv-from-enc
   uniconv/u32-conv-to-enc
   uniconv/u8-conv-from-enc
   uniconv/u8-conv-to-enc
   uniconv/u8-strconv-to-enc
   unistdio/ulc-fprintf
+  unistr/u32-chr
   unistr/u32-mbtouc-unsafe
   unistr/u8-mbsnlen
   unistr/u8-mbtouc-unsafe
