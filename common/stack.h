@@ -24,15 +24,10 @@
 
 #include "xalloc.h"
 
-#define STACK_ENTRY(name)			\
+#define STACK(type)				\
   struct					\
   {						\
-  } stack_entries;
-
-#define STACK(name)				\
-  struct					\
-  {						\
-    struct name *base;				\
+    type *base;					\
     ptrdiff_t items;				\
     size_t size;				\
   }

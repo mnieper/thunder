@@ -166,10 +166,9 @@ scheme_write (Object obj, FILE *out)
   {
     Object obj;
     size_t index;
-    STACK_ENTRY(frame);
   };
 
-  STACK(frame) stack;
+  STACK(struct frame) stack;
   stack_init (&stack);
   
   do

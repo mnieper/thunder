@@ -29,29 +29,23 @@ int
 main (int argc, char *argv)
 {
   typedef struct entry Entry;
-  struct entry
-  {
-    int value;
-    STACK_ENTRY(entry);
-  };
 
-  STACK(entry) s;
+  STACK(int) s;
   stack_init (&s);
   
   ASSERT (stack_is_empty (&s));
 
-  Entry e1 = { .value = 1 };
-  stack_push (&s, e1);
+  stack_push (&s, 1);
   ASSERT (!stack_is_empty (&s));
 
-  ASSERT (stack_top (&s).value == e1.value);
-  ASSERT (stack_pop (&s).value == e1.value);
+  ASSERT (stack_top (&s) == 1);
+  ASSERT (stack_pop (&s) == 1);
   ASSERT (stack_is_empty (&s));
 
   for (int i = 0; i < 100; ++i)
-    stack_push (&s, (Entry) { .value = i });
+    stack_push (&s, i);
   for (int i = 99; i >= 0; i--)
-    ASSERT (stack_pop (&s).value == i);
+    ASSERT (stack_pop (&s) == i);
   ASSERT (stack_is_empty (&s));
   
   stack_destroy (&s);
