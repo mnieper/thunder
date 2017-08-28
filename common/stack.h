@@ -40,8 +40,8 @@
 #define stack_init(stack)					\
   do								\
     {								\
-      (stack)->size = 10;					\
-      (stack)->base = xnmalloc (10, sizeof (*(stack)->base));	\
+      (stack)->size = 16;					\
+      (stack)->base = xnmalloc (16, sizeof (*(stack)->base));	\
       (stack)->items = 0;					\
     }								\
   while (0)
@@ -65,6 +65,9 @@
 
 #define stack_is_empty(stack)			\
   ((stack)->items == 0)
+
+#define stack_top(stack)			\
+  (*((stack)->base + (stack)->items - 1))
 
 #define stack_pop(stack)			\
   (*((stack)->base + --(stack)->items))

@@ -24,23 +24,14 @@
 #include <stdio.h>
 #include <gmp.h>
 #include <mpfr.h>
-#include <localcharset.h>
-#include <uniconv.h>
-#include <unistdio.h>
-#include <unistr.h>
 
+#include "localcharset.h"
+#include "stack.h"
+#include "uniconv.h"
+#include "unistdio.h"
+#include "unistr.h"
 #include "vmcommon.h"
 #include "xmalloca.h"
-
-enum frame_type { FRAME_PAIR, FRAME_VECTOR };
-
-struct write_frame
-{
-  enum frame_type type;
-  Object obj;
-  size_t index;
-  struct write_frame *prev;
-};
 
 static void
 write_exact_number (Object obj, FILE *out)
@@ -133,7 +124,20 @@ write_char (ucs4_t c, FILE *out)
 void
 scheme_write (Object obj, FILE *out)
 {
-  struct write_frame *prev = NULL;
+  enum frame_type { FRAME_PAIR, FRAME_VECTOR };
+
+  // TODO (XXX): No need for frame_type because we have the object
+  struct frame
+  {
+    enum frame_type type;
+    Object obj;
+    size_t index;
+    STACK_ENTRY(frame);
+  };
+
+  STACK(frame) stack;
+  stack_init (&stack);
+  
   /* TODO XXX: Refactor to use two loops and no labels. */
  write:
   do
@@ -225,30 +229,20 @@ scheme_write (Object obj, FILE *out)
 		}
 	    }
 	  fputc ('(', out);
-	  struct write_frame *frame = xmalloca (sizeof (struct write_frame));
-	  frame->type = FRAME_PAIR;
-	  frame->obj = obj;
-	  frame->index = 0;
-	  frame->prev = prev;
-	  prev = frame;
+	  stack_push (&stack, ((struct frame) { .type = FRAME_PAIR, .obj = obj, .index = 0 }));
 	}
       else if (is_vector (obj))
 	{
 	  fputs ("#(", out);
-	  struct write_frame *frame = xmalloca (sizeof (struct write_frame));
-	  frame->type = FRAME_VECTOR;
-	  frame->obj = obj;
-	  frame->index = 0;
-	  frame->prev = prev;
-	  prev = frame;
+	  stack_push (&stack, ((struct frame) { .type = FRAME_VECTOR, .obj = obj, .index = 0 }));
 	}
       else
 	fputs ("#<unknown>", out);
 
     check_stack:
-      if (prev != NULL)
-	{ 
-	  struct write_frame *frame = prev;
+      if (!stack_is_empty (&stack))
+	{
+	  struct frame *frame = &stack_top (&stack);
 	  switch (frame->type)
 	    {
 	    case FRAME_PAIR:
@@ -276,8 +270,7 @@ scheme_write (Object obj, FILE *out)
 		    }
 		case 2:
 		  fputc (')', out);
-		  prev = frame->prev;
-		  freea (frame);
+		  stack_pop (&stack);
 		  goto check_stack;
 		}
 	      break;
@@ -285,8 +278,7 @@ scheme_write (Object obj, FILE *out)
 	      if (frame->index == vector_length (frame->obj))
 		{
 		  fputc (')', out);
-		  prev = frame->prev;
-		  freea (frame);
+		  stack_pop (&stack);
 		  goto check_stack;
 		}
 	      else
@@ -300,7 +292,9 @@ scheme_write (Object obj, FILE *out)
 	    }
 	}
     }
-  while (prev != NULL);
+  while (!stack_is_empty (&stack));
+
+  stack_destroy (&stack);
 }
 
 char *
