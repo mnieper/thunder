@@ -121,15 +121,49 @@ write_char (ucs4_t c, FILE *out)
     }
 }
 
+static bool
+write_abbreviation (Object *obj, FILE *out)
+{
+  if (!is_pair (*obj))
+    return false;
+ 
+  Object first = car (*obj);
+  if (!is_pair (cdr (*obj)) || !is_null (cddr (*obj)))
+    return false;
+    
+  if (first == SYMBOL(QUOTE))
+    {
+      fputc ('\'', out);
+      *obj = cadr (*obj);
+      return true;
+    }
+  if (first == SYMBOL(QUASIQUOTE))
+    {
+      fputc ('`', out);
+      *obj = cadr (*obj);
+      return true;
+    }
+  if (first == SYMBOL(UNQUOTE))
+    {
+      fputc (',', out);
+      *obj = cadr (*obj);
+      return true;
+    }
+  if (first == SYMBOL(UNQUOTE_SPLICING))
+    {
+      fputs (",@", out);
+      *obj = cadr (*obj);
+      return true;
+    }
+
+  return false;
+}
+  
 void
 scheme_write (Object obj, FILE *out)
 {
-  enum frame_type { FRAME_PAIR, FRAME_VECTOR };
-
-  // TODO (XXX): No need for frame_type because we have the object
   struct frame
   {
-    enum frame_type type;
     Object obj;
     size_t index;
     STACK_ENTRY(frame);
@@ -138,11 +172,11 @@ scheme_write (Object obj, FILE *out)
   STACK(frame) stack;
   stack_init (&stack);
   
-  /* TODO XXX: Refactor to use two loops and no labels. */
- write:
   do
     {
       check_defined (obj);
+
+      while (write_abbreviation (&obj, out));
       
       if (is_boolean (obj))
 	{
@@ -200,52 +234,22 @@ scheme_write (Object obj, FILE *out)
 	write_inexact_number (obj, out);
       else if (is_pair (obj))
 	{
-	  Object first = car (obj);
-	  if (is_pair (cdr (obj)) && is_null (cddr (obj)))
-	    {
-	      if (first == SYMBOL(QUOTE))
-		{
-		  fputc ('\'', out);
-		  obj = cadr (obj);
-		  goto write;
-		}
-	      if (first == SYMBOL(QUASIQUOTE))
-		{
-		  fputc ('`', out);
-		  obj = cadr (obj);
-		  goto write;
-		}
-	      if (first == SYMBOL(UNQUOTE))
-		{
-		  fputc (',', out);
-		  obj = cadr (obj);
-		  goto write;
-		}
-	      if (first == SYMBOL(UNQUOTE_SPLICING))
-		{
-		  fputs (",@", out);
-		  obj = cadr (obj);
-		  goto write;
-		}
-	    }
 	  fputc ('(', out);
-	  stack_push (&stack, ((struct frame) { .type = FRAME_PAIR, .obj = obj, .index = 0 }));
+	  stack_push (&stack, ((struct frame) { .obj = obj, .index = 0 }));
 	}
       else if (is_vector (obj))
 	{
 	  fputs ("#(", out);
-	  stack_push (&stack, ((struct frame) { .type = FRAME_VECTOR, .obj = obj, .index = 0 }));
+	  stack_push (&stack, ((struct frame) { .obj = obj, .index = 0 }));
 	}
       else
 	fputs ("#<unknown>", out);
 
-    check_stack:
-      if (!stack_is_empty (&stack))
+      while (!stack_is_empty (&stack))
 	{
 	  struct frame *frame = &stack_top (&stack);
-	  switch (frame->type)
+	  if (is_pair (frame->obj))
 	    {
-	    case FRAME_PAIR:
 	      switch (frame->index)
 		{
 		case 0:
@@ -259,7 +263,7 @@ scheme_write (Object obj, FILE *out)
 		      fputc (' ', out);
 		      frame->obj = cdr (frame->obj);
 		      frame->index = 0;
-		      goto check_stack;
+		      continue;
 		    }
 		  if (!is_null (obj))
 		    {
@@ -268,18 +272,21 @@ scheme_write (Object obj, FILE *out)
 		      frame->index = 2;
 		      break;
 		    }
+		  /* fallthrough */
 		case 2:
 		  fputc (')', out);
 		  stack_pop (&stack);
-		  goto check_stack;
+		  continue;
 		}
 	      break;
-	    case FRAME_VECTOR:
+	    }
+	  else
+	    {
 	      if (frame->index == vector_length (frame->obj))
 		{
 		  fputc (')', out);
 		  stack_pop (&stack);
-		  goto check_stack;
+		  continue;
 		}
 	      else
 		{
@@ -288,8 +295,8 @@ scheme_write (Object obj, FILE *out)
 		  obj = vector_ref (frame->obj, frame->index);
 		  frame->index += 1;
 		}
-	      break;
 	    }
+	  break;
 	}
     }
   while (!stack_is_empty (&stack));
