@@ -15,9 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+info_TEXINFOS = thunder.texi
 
-ACLOCAL_AMFLAGS = -I m4
-
-SUBDIRS = lib common include libvm src doc tests
-
-EXTRA_DIST = m4/gnulib-cache.m4
+thunder_TEXINFOS = fdl.texi

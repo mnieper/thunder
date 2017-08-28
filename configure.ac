@@ -67,5 +67,6 @@ AC_CONFIG_FILES([Makefile
 		 include/Makefile
 		 libvm/Makefile
 		 src/Makefile
+		 doc/Makefile
 		 tests/Makefile])
 AC_OUTPUT

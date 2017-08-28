@@ -1,0 +1,121 @@
+\input texinfo @c -*-texinfo-*-
+@c %**start of header
+@setfilename thunder.info
+@include version.texi
+@settitle Thunder @value{VERSION}
+
+@defcodeindex op
+@syncodeindex op cp
+@c %**end of header
+
+@copying
+This manual is for Thunder (version @value{VERSION}, @value{UPDATED}),
+a virtual machine.
+
+Copyright @copyright{} 2017 Marc Nieper-Wi@ss{} kirchen
+
+@quotation
+Permission is granted to copy, distribute and/or modify this document
+under the terms of the GNU Free Documentation License, Version 1.3 or
+any later version published by the Free Software Foundation; with no
+Invariant Sections, with no Front-Cover Texts, and with no Back-Cover
+Texts.  A copy of the license is included in the section entitled
+``GNU Free Documentation License''.
+@end quotation
+@end copying
+
+@dircategory Software development
+@direntry
+* Thunder: (thunder).   The Thunder virtual machine.
+@end direntry
+
+@titlepage
+@title Thunder
+@subtitle for version @value{VERSION}, @value{UPDATED}
+@author Marc Nieper-Wi@ss{}kirchen (@email{incoming+nieper/thunder@@gitlab.com})
+@page
+@vskip 0pt plus 1filll
+@insertcopying
+@end titlepage
+
+@contents
+
+@ifnottex
+@node Top
+@top Thunder
+
+This manual is for Thunder (version @value{VERSION}, @value{UPDATED}),
+a virtual machine.
+@end ifnottex
+
+@menu
+* Overview::		General purpose and information.
+* The instruction set:: The instruction set used in Thunder.
+* Reporting bugs::	Sending bug reports and feature suggestions.
+* GNU Free Documentation License:: Copying and sharing this documentation.
+* Concept index::	Index of concepts.
+@end menu
+
+
+@node Overview
+@chapter Overview
+
+@cindex overview
+
+The @command{thunder} program (@url{https://gitlab.com/nieper/thunder})
+is a virtual machine for Scheme-like languages.
+
+
+@node The instruction set
+@chapter The instruction set
+
+
+
+@node Reporting bugs
+@chapter Reporting bugs
+
+@cindex bug reporting
+@cindex problems
+@cindex reporting bugs
+
+To report bugs, suggest enhancements or otherwise discuss Thunder,
+please send electronic mail to @email{bug-hello@@gnu.org}.
+
+@cindex checklist for bug reports
+For bug reports, please include enough information for the maintainers
+to reproduce the problem.  Generally speaking, that means:
+
+@itemize @bullet
+@item The version numbers of Thunder (which you can find by running
+      @w{@samp{thunder --version}}) and any other program(s) or
+      manual(s) involved.
+@item Hardware and operating system names and versions.
+@item The contents of any input files necessary to reproduce the bug.
+@item The expected behavior and/or output.
+@item A description of the problem and samples of any erroneous output.
+@item Options you gave to @command{configure} other than specifying
+      installation directories.
+@item Anything else that you think would be helpful.
+@end itemize
+
+When in doubt whether something is needed or not, include it.  It's
+better to include too much than to leave out something important.
+
+@cindex patches, contributing
+Patches are welcome; if possible, please make them with @samp{@w{diff
+-c}} (@pxref{Top,, Overview, diff, Comparing and Merging Files}) and
+include @file{ChangeLog} entries (@pxref{Change Log,,, emacs, The GNU
+Emacs Manual}).  Please follow the existing coding style.
+
+
+@node GNU Free Documentation License
+@appendix GNU Free Documentation License
+
+@include fdl.texi
+
+@node Concept index
+@unnumbered Concept index
+
+@printindex cp
+
+@bye
