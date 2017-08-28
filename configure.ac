@@ -55,11 +55,12 @@ AC_CHECK_LIB(gmp, __gmpz_init, ,
 gl_INIT
 
 # Checks for header files.
+AC_CHECK_HEADERS([stdlib.h ltdl.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 
 # Checks for library functions.
-#XXX gl_LIBUNISTRING
+AC_SEARCH_LIBS([lt_dlopen], [ltdl])
 
 AC_CONFIG_FILES([Makefile
                  lib/Makefile

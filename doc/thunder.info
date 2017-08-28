@@ -29,20 +29,30 @@ machine.
 * Menu:
 
 * Overview::		General purpose and information.
+* The instruction set:: The instruction set used in Thunder.
 * Reporting bugs::	Sending bug reports and feature suggestions.
 * GNU Free Documentation License:: Copying and sharing this documentation.
 * Concept index::	Index of concepts.
 
 
-File: thunder.info,  Node: Overview,  Next: Reporting bugs,  Prev: Top,  Up: Top
+File: thunder.info,  Node: Overview,  Next: The instruction set,  Prev: Top,  Up: Top
 
 1 Overview
 **********
 
-
-File: thunder.info,  Node: Reporting bugs,  Next: GNU Free Documentation License,  Prev: Overview,  Up: Top
+The 'thunder' program (<https://gitlab.com/nieper/thunder>) is a virtual
+machine for Scheme-like languages.
 
-2 Reporting bugs
+
+File: thunder.info,  Node: The instruction set,  Next: Reporting bugs,  Prev: Overview,  Up: Top
+
+2 The instruction set
+*********************
+
+
+File: thunder.info,  Node: Reporting bugs,  Next: GNU Free Documentation License,  Prev: The instruction set,  Up: Top
+
+3 Reporting bugs
 ****************
 
 To report bugs, suggest enhancements or otherwise discuss Thunder,
@@ -562,7 +572,7 @@ Concept index
 
 * bug reporting:                         Reporting bugs.       (line  6)
 * checklist for bug reports:             Reporting bugs.       (line  9)
-* overview:                              Overview.             (line  5)
+* overview:                              Overview.             (line  6)
 * patches, contributing:                 Reporting bugs.       (line 26)
 * problems:                              Reporting bugs.       (line  6)
 * reporting bugs:                        Reporting bugs.       (line  6)
@@ -571,9 +581,10 @@ Concept index
 
 Tag Table:
 Node: Top742
-Node: Overview1133
-Node: Reporting bugs1240
-Node: GNU Free Documentation License2506
-Node: Concept index27663
+Node: Overview1194
+Node: The instruction set1415
+Node: Reporting bugs1560
+Node: GNU Free Documentation License2837
+Node: Concept index27994
 
 End Tag Table

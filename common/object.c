@@ -145,11 +145,26 @@ object_pointers (Pointer header)
   if (is_binary (*header))
     return NULL;
 
-  /* Skip size field if present. */
-  Pointer start = (header_payload (*header) == 0) ? header + 2 : header + 1; 
+  size_t size = object_size (header);
   
-  while (is_link (*header))
-    start += 2;
+  /* Skip size field if present. */  
+  Pointer start;
+  if (header_payload (*header))
+    {
+      start = header + 2;
+      size -= 2;
+    }
+  else
+    {
+      start = header + 1;
+      size -= 1;
+    }
+
+  while (size > 0 && is_link (*header))
+    {
+      size -= 2;
+      start += 2;
+    }
   
   return start;
 }
