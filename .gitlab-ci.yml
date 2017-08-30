@@ -1,0 +1,9 @@
+before_script:
+  - apt-get -y update
+  - apt-get -y install texinfo
+  - ./bootstrap
+  - ./configure
+
+check:
+  script:
+    - make check
