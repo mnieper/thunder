@@ -469,7 +469,7 @@ make_procedure (Heap *heap, Object code)
 {
   object_stack_grow (&heap->stack, PROCEDURE_TYPE);
   object_stack_grow (&heap->stack, compile (heap, code));
-  object_stack_grow (&heap->stack, code);
+  object_stack_grow (&heap->stack, copy_object (code));
   object_stack_align (&heap->stack);
   return object_stack_finish (&heap->stack) | POINTER_TYPE;
 }
@@ -479,6 +479,12 @@ Object
 procedure_assembly (Object proc)
 {
   return ((Pointer) proc)[0];
+}
+
+Object
+procedure_code (Object proc)
+{
+  return ((Pointer) proc)[1];
 }
 
 bool
@@ -532,11 +538,24 @@ closure_set (Heap *heap, Object closure, size_t index, Object val)
   mutate (heap, ((Pointer) closure) + size - index - 1, val);  
 }
 
+size_t
+closure_length (Object closure)
+{
+  return ((Pointer) closure) [0] / WORDSIZE
+    - 1 - 2 * assembly_entry_point_number (procedure_assembly (closure_procedure (closure)));
+}
+
 bool
 is_closure (Object obj)
 {
   return (obj && OBJECT_TYPE_MASK) == POINTER_TYPE
     &&(((Pointer) obj)[-1] & HEADER_TYPE_MASK) == CLOSURE_TYPE;
+}
+
+int
+closure_call (Object closure, size_t entry_point)
+{
+  return trampoline ((EntryPoint) ((Pointer) closure) [2 + 2 * entry_point], (Pointer) closure);
 }
 
 

@@ -42,7 +42,7 @@ static bool
 has_location (Object obj)
 {
   // TODO (XXX): Records, ports, etc.
-  return is_string (obj) || is_pair (obj) || is_vector (obj);
+  return is_string (obj) || is_pair (obj) || is_vector (obj) || is_closure (obj);
 }
 
 static void
@@ -118,6 +118,18 @@ dump_string (Object obj, FILE *out)
     }
 }
 
+static void
+dump_procedure (Object proc, FILE *out)
+{
+  fputs ("(code", out);
+  for (Object code = procedure_code (proc); !is_null (code); code = cdr (code))
+    {
+      fputc (' ', out);
+      scheme_write (car (code), out);
+    }
+  fputc (')', out);
+}
+
 struct setter
 {
   Object obj;
@@ -186,13 +198,13 @@ scan_object (Object obj, gl_list_t obj_table)
 
   struct frame *top = NULL;
   long int count = 0;
-  
+
   do
     {
       if (has_location (obj))
 	{
 	  if (!insert (obj_table, obj, &count)
-	      && (is_pair (obj) || is_vector (obj)))
+	      && (is_pair (obj) || is_vector (obj) || is_closure (obj)))
 	    {
 	      struct frame *frame = xmalloca (sizeof (struct frame));
 	      frame->obj = obj;
@@ -201,7 +213,7 @@ scan_object (Object obj, gl_list_t obj_table)
 	      top = frame;
 	    }
 	}
-      
+
       while (top != NULL)
 	{
 	  struct frame *frame = top;
@@ -224,7 +236,7 @@ scan_object (Object obj, gl_list_t obj_table)
 	      frame->index++;
 	      break; /* while */
 	    }
-	  else
+	  else if (is_vector (frame->obj))
 	    /* Vector */
 	    {
 	      if (frame->index == vector_length (frame->obj))
@@ -235,6 +247,17 @@ scan_object (Object obj, gl_list_t obj_table)
 		}
 	      obj = vector_ref (frame->obj, frame->index++);
 	      break; /* while */
+	    }
+	  else
+	    /* Closure */
+	    {
+	      if (frame->index == closure_length (frame->obj))
+		{
+		  top = frame->prev;
+		  freea (frame);
+		  continue; /* while */
+		}
+	      obj = closure_ref (frame->obj, frame->index++);
 	    }
 	}
     }
@@ -284,6 +307,11 @@ dump_object (Object obj, gl_list_t obj_table, struct obstack *setters, FILE *out
 	  frame->prev = top;
 	  top = frame;
 	}
+      else if (is_closure (obj))
+	{
+	  fputs ("(closure ", out);
+	  // TODO(XXX): output procedure and slots.
+	}
       else if (is_string (obj))
 	dump_string (obj, out);
       else if (is_null (obj))
@@ -292,6 +320,8 @@ dump_object (Object obj, gl_list_t obj_table, struct obstack *setters, FILE *out
 	fputs ("eof-object)", out);
       else if (is_symbol (obj))
 	dump_symbol (obj, out);
+      else if (is_procedure (obj))
+	dump_procedure (obj, out);
       else
 	/* The object is self-evaluating. */
 	scheme_write (obj, out);

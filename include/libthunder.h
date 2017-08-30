@@ -21,6 +21,8 @@
 #ifndef LIBTHUNDER_H_INCLUDED
 #define LIBTHUNDER_H_INCLUDED
 
+#include <stdio.h>
+
 typedef struct vm Vm;
 
 void
@@ -31,5 +33,8 @@ vm_create (void);
 
 void
 vm_free (Vm *);
+
+int
+vm_load (Vm *, FILE *, char const *);
 
 #endif /* LIBTHUNDER_H_INCLUDED */

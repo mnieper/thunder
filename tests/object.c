@@ -86,6 +86,10 @@ main (int argc, char *argv)
 
   Object proc = make_procedure (&heap, list (&heap,
 					     list (&heap, INSTRUCTION(entry)),
+					     list (&heap,
+						   INSTRUCTION(movi),
+						   SYMBOL(R0),
+						   exact_number (&heap, 42, 1)),
 					     list (&heap, INSTRUCTION(ret))));
   ASSERT (is_procedure (proc));
   ASSERT (assembly_entry_point_number (procedure_assembly (proc)) == 1);
@@ -95,6 +99,8 @@ main (int argc, char *argv)
   ASSERT (closure_ref (closure, 0) == make_char ('a'));
   closure_set (&heap, closure, 0, make_char ('b'));
   ASSERT (closure_ref (closure, 0) == make_char ('b'));
+  ASSERT (closure_call (closure, 0) == 42);
+  ASSERT (closure_length (closure) == 1);
   
   mpq_t r;
   mpq_t *q;

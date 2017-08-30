@@ -109,3 +109,9 @@ assert_symbol (Object obj)
     error (EXIT_FAILURE, 0, "%s: %s", "not a symbol", object_get_str (obj));
 }
 
+Object
+copy_object (Object obj)
+{
+  /* FIXME(XXX): Return a deep copy of the object. */
+  return obj;
+}

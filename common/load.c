@@ -108,6 +108,8 @@ load_object (Heap *heap, Hash_table *obj_table, Object expr, Location *loc, char
 	    expr = string (heap, cdr (expr));
 	  else if (op == SYMBOL(SYMBOL))
 	    expr = symbol (heap, cdr (expr));
+	  else if (op == SYMBOL(CODE))
+	    expr = make_procedure (heap, cdr (expr));
 	  else if (op == SYMBOL(CONS))
 	    {
 	      struct frame *frame = xmalloca (sizeof (struct frame));

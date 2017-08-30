@@ -63,6 +63,8 @@ main (int argc, char *argv)
 		     "(set-car! $1 $0)\n"
 		     "(set-cdr! $1 $1)\n"
                      "$0\n"));
+  ASSERT(test_image (&heap,
+		     "(code (entry) (ret))\n"));
   
   heap_destroy (&heap);
 }

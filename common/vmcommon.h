@@ -486,11 +486,20 @@ make_procedure (Heap *heap, Object code);
 Object
 procedure_assembly (Object proc);
 
-bool
+Object
+procedure_code (Object proc);
+
+  bool
 is_procedure (Object obj);
 
 Object
 make_closure (Heap *heap, Object proc, size_t slots, Object obj);
+
+bool
+is_closure (Object obj);
+
+size_t
+closure_length (Object closure);
 
 Object
 closure_procedure (Object closure);
@@ -500,6 +509,9 @@ closure_ref (Object closure, size_t index);
 
 Object
 closure_set (Heap *heap, Object closure, size_t index, Object val);
+
+int
+closure_call (Object closure, size_t entry_point);
 
 /* Runtime */
 bool
@@ -519,6 +531,9 @@ assert_list (Object obj);
 
 void
 assert_symbol (Object obj);
+
+Object
+copy_object (Object obj);
 
 /* Numbers */
 

@@ -22,12 +22,15 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
+#include <errno.h>
 #include <libthunder.h>
 #include <limits.h>
 #include <locale.h>
 #include <stdio.h>
 #include <stdlib.h>
+
 #include "closeout.h"
+#include "error.h"
 #include "getopt.h"
 #include "progname.h"
 #include "version-etc.h"
@@ -37,17 +40,22 @@ static void print_version (void);
 
 static Vm *vm;
 
+static FILE *src;
+
 static void
 free_vm (void)
 {
   vm_free (vm);
 }
 
+static void
+close_src (void)
+{
+  fclose (src);
+}
+
 int main (int argc, char *argv[])
 {
-  size_t head_size = 1ULL << 30;
-  size_t stack_size = 1ULL << 20;
-  
   int optc;
 
   enum {
@@ -79,21 +87,26 @@ int main (int argc, char *argv[])
 	print_help (stderr);
       }
 
+  if (optind == argc)
+    error (EXIT_FAILURE, 0, "%s", "no input file");
+  
+  char const *filename = argv [optind];
+  src = fopen (filename, "r");
+  if (src == NULL)
+    error (EXIT_FAILURE, errno, "%s", filename);
+  atexit (close_src);
+  
   vm_init ();
   vm = vm_create ();
   atexit (free_vm);
 
-  // XXX
-  // TODO: int vm_load (FILE *src)
-  // - Reads src using load.  The object "obj" is then assumed to be a
-  // closure. Then, procedure "0" is executed in this closure.  It takes the pointer
-  // to the closure.  And returns an int.  
+  return vm_load (vm, src, filename);
 }
 
 static void
 print_help (FILE *out)
 {
-  fprintf (out, "Usage: %s [OPTION] ...\n", program_name);
+  fprintf (out, "Usage: %s [OPTION] file\n", program_name);
   fputs ("Run the Thunder virtual machine.\n", out);
   fputs ("\n", out);
   fputs ("  --help     display this help and exit\n", out);

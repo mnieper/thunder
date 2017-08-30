@@ -22,6 +22,7 @@
 #endif
 #include <libthunder.h>
 
+#include "error.h"
 #include "vmcommon.h"
 #include "xalloc.h"
 
@@ -50,4 +51,15 @@ vm_free (Vm *vm)
 {
   heap_destroy (&vm->heap);
   free (vm);
+}
+
+int
+vm_load (Vm *vm, FILE *src, char const *filename)
+{
+  Object obj = load (&vm->heap, src, filename);
+
+  if (!is_closure (obj))
+    error_at_line (EXIT_FAILURE, 0, filename, 1, "not a thunder image");
+
+  return closure_call (obj, 0);
 }
