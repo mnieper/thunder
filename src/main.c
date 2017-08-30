@@ -82,6 +82,12 @@ int main (int argc, char *argv[])
   vm_init ();
   vm = vm_create ();
   atexit (free_vm);
+
+  // XXX
+  // TODO: int vm_load (FILE *src)
+  // - Reads src using load.  The object "obj" is then assumed to be a
+  // closure. Then, procedure "0" is executed in this closure.  It takes the pointer
+  // to the closure.  And returns an int.  
 }
 
 static void
