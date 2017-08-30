@@ -490,6 +490,9 @@ bool
 is_procedure (Object obj);
 
 Object
+make_closure (Heap *heap, Object proc, size_t slots, Object obj);
+
+Object
 closure_procedure (Object closure);
 
 Object

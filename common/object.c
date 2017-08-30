@@ -514,21 +514,21 @@ make_closure (Heap *heap, Object proc, size_t slots, Object obj)
 Object
 closure_procedure (Object closure)
 {
-  size_t size = ((Pointer) closure) [0];
+  size_t size = ((Pointer) closure) [0] / WORDSIZE;
   return ((Pointer) closure)[size];
 }
 
 Object
 closure_ref (Object closure, size_t index)
 {
-  size_t size = ((Pointer) closure) [0];
+  size_t size = ((Pointer) closure) [0] / WORDSIZE;
   return ((Pointer) closure)[size - index - 1];
 }
 
 Object
 closure_set (Heap *heap, Object closure, size_t index, Object val)
 {
-  size_t size = ((Pointer) closure) [0];
+  size_t size = ((Pointer) closure) [0] / WORDSIZE;
   mutate (heap, ((Pointer) closure) + size - index - 1, val);  
 }
 

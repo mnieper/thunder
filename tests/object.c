@@ -90,6 +90,9 @@ main (int argc, char *argv)
   ASSERT (is_procedure (proc));
   ASSERT (assembly_entry_point_number (procedure_assembly (proc)) == 1);
 
+  Object closure = make_closure (&heap, proc, 1, make_char ('a'));
+  ASSERT (closure_ref (closure, 0) == make_char ('a'));
+  
   mpq_t r;
   mpq_t *q;
   mpq_init (r);
