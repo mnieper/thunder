@@ -47,7 +47,7 @@ static bool
 comparator (void const *entry1, void const *entry2)
 {
   return ((struct entry const *) entry1)->identifier
-    == ((struct entry const *) entry2) -> identifier;
+    == ((struct entry const *) entry2)->identifier;
 }
 
 static size_t
@@ -153,9 +153,9 @@ load_object (Heap *heap, Hash_table *obj_table, Object expr, Location *loc, char
 		{
 		case FRAME_PAIR:
 		  if (top->index == 1)
-		    set_car (top->obj, expr);
+		    set_car (heap, top->obj, expr);
 		  else
-		    set_cdr (top->obj, expr);
+		    set_cdr (heap, top->obj, expr);
 		  break;
 		case FRAME_VECTOR:
 		  vector_set (heap, top->obj, top->index - 1, expr);
@@ -264,8 +264,8 @@ load (Heap *heap, FILE *in, char const *filename)
 		error_at_line (EXIT_FAILURE, 0, filename, loc.first_line,
 			       "not a pair: %s", object_get_str (id));
 
-	      set_car (entry->obj, load_object (heap, obj_table, car (cddr (expr)),
-						&loc, filename));
+	      set_car (heap, entry->obj, load_object (heap, obj_table, car (cddr (expr)),
+						      &loc, filename));
 	      
 	      continue;
 	    }
@@ -286,8 +286,8 @@ load (Heap *heap, FILE *in, char const *filename)
 		error_at_line (EXIT_FAILURE, 0, filename, loc.first_line,
 			       "not a pair: %s", object_get_str (id));
 
-	      set_cdr (entry->obj, load_object (heap, obj_table, car (cddr (expr)),
-						&loc, filename));
+	      set_cdr (heap, entry->obj, load_object (heap, obj_table, car (cddr (expr)),
+						      &loc, filename));
 	      
 	      continue;
 	    }
@@ -315,8 +315,6 @@ load (Heap *heap, FILE *in, char const *filename)
 		error_at_line (EXIT_FAILURE, 0, filename, loc.first_line,
 			       "not an exact number: %s", object_get_str (index));
 	      
-	      fprintf (stderr, "XXX %d\n", fixnum (index));
-
 	      vector_set (heap, entry->obj, fixnum (index),
 			  load_object (heap, obj_table, cadr (cddr (expr)),
 				       &loc, filename));

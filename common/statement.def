@@ -17,19 +17,3 @@
  *      Marc Nieper-Wißkirchen
  */
 
-
-#ifndef LIBTHUNDER_H_INCLUDED
-#define LIBTHUNDER_H_INCLUDED
-
-typedef struct vm Vm;
-
-void
-vm_init (void);
-
-Vm *
-vm_create (void);
-
-void
-vm_free (Vm *);
-
-#endif /* LIBTHUNDER_H_INCLUDED */

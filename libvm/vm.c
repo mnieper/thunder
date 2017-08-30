@@ -20,7 +20,6 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-
 #include <libthunder.h>
 
 #include "vmcommon.h"
@@ -31,9 +30,16 @@ struct vm
   Heap heap;
 };
 
+void
+vm_init (void)
+{
+  init ();
+}
+
 Vm *
 vm_create (void)
 {
+  
   Vm *vm = XMALLOC (struct vm);
   heap_init (&vm->heap, 1ULL << 30);
   return vm;

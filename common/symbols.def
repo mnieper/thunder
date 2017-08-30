@@ -1,0 +1,44 @@
+/*
+ * Copyright (C) 2017  Marc Nieper-Wißkirchen
+ *
+ * This file is part of Thunder.
+ *
+ * Thunder is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation; either version 3, or (at
+ * your option) any later version.
+ *
+ * Thunder is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+ * or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
+ * License for more details.
+ *
+ * Authors:
+ *      Marc Nieper-Wißkirchen
+ */
+
+
+EXPAND_SYMBOL(QUOTE, u8"quote")
+EXPAND_SYMBOL(QUASIQUOTE, u8"quasiquote")
+EXPAND_SYMBOL(UNQUOTE, u8"unquote")
+EXPAND_SYMBOL(UNQUOTE_SPLICING, u8"unquote-splicing")
+EXPAND_SYMBOL(DEFINE, u8"define")
+EXPAND_SYMBOL(CONS, u8"cons")				
+EXPAND_SYMBOL(SET_CAR, u8"set-car!")				
+EXPAND_SYMBOL(SET_CDR, u8"set-cdr!")				
+EXPAND_SYMBOL(VECTOR, u8"vector")				
+EXPAND_SYMBOL(VECTOR_SET, u8"vector-set!")			
+EXPAND_SYMBOL(STRING, u8"string")				
+EXPAND_SYMBOL(SYMBOL, u8"symbol")				
+EXPAND_SYMBOL(R0, u8"%r0")
+EXPAND_SYMBOL(R1, u8"%r1")
+EXPAND_SYMBOL(R2, u8"%r2")
+EXPAND_SYMBOL(V0, u8"%v0")
+EXPAND_SYMBOL(V1, u8"%v1")
+EXPAND_SYMBOL(V2, u8"%v2")
+
+
+#define EXPAND_INSTRUCTION(name, type)		\
+  EXPAND_SYMBOL (INSTRUCTION_##name, u8 ## #name)
+#include "instructions.def"
+#undef EXPAND_INSTRUCTION

@@ -18,18 +18,19 @@
  */
 
 
-#ifndef LIBTHUNDER_H_INCLUDED
-#define LIBTHUNDER_H_INCLUDED
 
-typedef struct vm Vm;
+EXPAND_INSTRUCTION (entry, special)
+EXPAND_INSTRUCTION (ret, special)
 
-void
-vm_init (void);
+EXPAND_INSTRUCTION (ellipsis, void)
+EXPAND_INSTRUCTION (finishi, fn)
+EXPAND_INSTRUCTION (prepare, void)
+EXPAND_INSTRUCTION (pushargi, im)
+EXPAND_INSTRUCTION (pushargr, ir)
 
-Vm *
-vm_create (void);
-
-void
-vm_free (Vm *);
-
-#endif /* LIBTHUNDER_H_INCLUDED */
+EXPAND_INSTRUCTION (addi, ir_ir_im)
+EXPAND_INSTRUCTION (addr, ir_ir_ir)
+EXPAND_INSTRUCTION (movi, ir_im)
+EXPAND_INSTRUCTION (movr, ir_ir)
+EXPAND_INSTRUCTION (muli, ir_ir_im)
+EXPAND_INSTRUCTION (mulr, ir_ir_ir)

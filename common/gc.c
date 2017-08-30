@@ -25,8 +25,6 @@
 #include "vmcommon.h"
 #include "xalloc.h"
 
-Object symbols[SYMBOL_COUNT];
-
 typedef bool (*MutationProcessor) (Object *, Heap *);
 
 static MutationTable *
@@ -78,20 +76,18 @@ heap_init (Heap *heap, size_t heap_size)
   heap->mutation_table = mutation_table_create ();
   symbol_table_init (&heap->symbol_table);
   resource_manager_init (&heap->resource_manager);
-  obstack_init (&heap->stack);
-  obstack_alignment_mask (&heap->stack) = ALIGNMENT_MASK;
-  heap->stack_base = obstack_finish (&heap->stack);
+  object_stack_init (&heap->stack);
   flip (heap);
-#define ENTRY(id, name)			\
+#define EXPAND_SYMBOL(id, name)			\
   symbols[SYMBOL_##id] = make_symbol (heap, name, strlen (name));
-  SYMBOLS
-#undef ENTRY
+# include "symbols.def"
+#undef EXPAND_SYMBOL
 }
 
 void
 heap_destroy (Heap *heap)
 {
-  obstack_free (&heap->stack, NULL);
+  object_stack_destroy (&heap->stack);
   mutation_table_free (heap->mutation_table);
   symbol_table_destroy (&heap->symbol_table);
   resource_manager_destroy (&heap->resource_manager);
@@ -142,9 +138,11 @@ forward (Heap *heap, Pointer from)
 static void
 process (Heap *heap, Object *object)
 {
-  if (!is_pointer (*object) || is_in_heap (heap, (Pointer) *object))
+  if (!is_pointer (*object)
+      || is_well_known_symbol ((Pointer) *object)
+      || is_in_heap (heap, (Pointer) *object))
     return;
-
+  
   if (is_unmanaged ((Pointer) *object))
     {
       switch (header_type ((Pointer) *object))
@@ -211,7 +209,7 @@ collect (Heap *restrict heap, size_t nursery_size, Object *roots[], size_t root_
   if (old_start != NULL)
     free (old_start);
 
-  obstack_free (&heap->stack, heap->stack_base);
+  object_stack_clear (&heap->stack);
 
   resource_manager_end_gc (&heap->resource_manager);
 }

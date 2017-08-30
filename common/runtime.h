@@ -17,19 +17,15 @@
  *      Marc Nieper-Wißkirchen
  */
 
+#ifndef RUNTIME_H_INCLUDED
+#define RUNTIME_H_INCLUDED
 
-#ifndef LIBTHUNDER_H_INCLUDED
-#define LIBTHUNDER_H_INCLUDED
+#include "vmcommon.h"
 
-typedef struct vm Vm;
+#define list(heap, ...)				\
+  runtime_list (heap, __VA_ARGS__, NONE)
 
-void
-vm_init (void);
+Object
+runtime_list (Heap *heap, ...);
 
-Vm *
-vm_create (void);
-
-void
-vm_free (Vm *);
-
-#endif /* LIBTHUNDER_H_INCLUDED */
+#endif /* RUNTIME_H_INCLUDED */

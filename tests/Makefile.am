@@ -17,13 +17,16 @@
 
 
 AM_CPPFLAGS = -I$(top_srcdir)/include -I$(top_builddir)/lib -I$(top_srcdir)/common
-LDADD = ../common/libvmcommon.la
+AM_LDFLAGS = -dlopen self
+
+LDADD = $(top_srcdir)/common/libvmcommon.la
 
 TEST_EXTENSIONS =
 LOG_COMPILER = $(LIBTOOL) --mode=execute $(VALGRIND) --suppressions=$(top_builddir)/lib/malloca.valgrind
 TESTS_ENVIRONMENT = @LOCALCHARSET_TESTS_ENVIRONMENT@
 
-check_PROGRAMS = deque image number object symbol_table reader runtime stack write gc
+check_PROGRAMS = compiler deque image number object symbol_table	\
+reader runtime stack write gc
 check_SCRIPTS = test.sh
 TESTS = $(check_PROGRAMS) $(check_SCRIPTS)
 

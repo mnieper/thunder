@@ -20,8 +20,11 @@
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif
+#include <stdarg.h>
 #include <stddef.h>
+#include <stdlib.h>
 
+#include "error.h"
 #include "vmcommon.h"
 
 bool
@@ -62,3 +65,47 @@ fixnum (Object number)
 {
   return mpz_get_si (mpq_numref (*exact_number_value (number))); 
 }
+
+Object
+runtime_list (Heap *heap, ...)
+{
+  Object list = make_null ();
+  
+  va_list ap;
+  va_start (ap, heap);
+
+  Object pair, obj;
+  while ((obj = va_arg (ap, Object)) != NONE)
+    {
+      if (is_null (list))
+	pair = list = cons (heap, obj, make_null ());
+      else
+	{      
+	  set_cdr (heap, pair, cons (heap, obj, make_null ()));
+	  pair = cdr (pair);
+	}
+    }
+  
+  va_end (ap);
+  return list;
+}
+
+void
+assert_list (Object obj)
+{
+  if (is_list (obj))
+    return;
+
+  if (is_pair (obj))
+    error (EXIT_FAILURE, 0, "%s: %s", "dotted list in source", object_get_str (obj));
+  
+  error (EXIT_FAILURE, 0, "%s: %s", "not a list", object_get_str (obj));
+}
+
+void
+assert_symbol (Object obj)
+{
+  if (!is_symbol (obj))
+    error (EXIT_FAILURE, 0, "%s: %s", "not a symbol", object_get_str (obj));
+}
+

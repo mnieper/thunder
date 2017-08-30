@@ -23,6 +23,7 @@
 #include <stddef.h>
 
 #include "error.h"
+#include "uniconv.h"
 #include "unistr.h"
 #include "unitypes.h"
 
@@ -43,6 +44,8 @@ is_pointer (Object object)
 bool
 is_unmanaged (Pointer pointer)
 {
+  if (is_pair ((Object) pointer))
+    return false;
   return (pointer[-1] & (OBJECT_TYPE_MASK | UNMANAGED_TYPE))
     == (HEADER_TYPE | UNMANAGED_TYPE);
 }
@@ -57,6 +60,14 @@ bool
 is_binary (Object header)
 {
   return (header & BINARY_TYPE) == BINARY_TYPE;
+}
+
+bool
+is_well_known_symbol (Pointer pointer)
+{
+  if (is_pair ((Object) pointer))
+    return false;
+  return (pointer[-1] & WELL_KNOWN_SYMBOL) == WELL_KNOWN_SYMBOL;
 }
 
 static bool
@@ -113,7 +124,7 @@ object_header (Pointer pointer)
     return pointer;
 
   /* If it is not a header, it has to be a link field. */
-  return pointer - object_payload (*pointer) / WORDSIZE;
+  return pointer - (object_payload (*pointer) / WORDSIZE);
 }
 
 size_t
@@ -145,60 +156,22 @@ object_pointers (Pointer header)
   if (is_binary (*header))
     return NULL;
 
-  size_t size = object_size (header);
+  Pointer end = header + object_size (header);
   
   /* Skip size field if present. */  
-  Pointer start;
-  if (header_payload (*header))
+  Pointer start = header_payload (*header) ? header + 2 : header + 1;
+  
+  while (start < end)
     {
-      start = header + 2;
-      size -= 2;
-    }
-  else
-    {
-      start = header + 1;
-      size -= 1;
+      if (is_link (*start))
+	{
+	  start += 2;
+	  continue;
+	}
+      break;
     }
 
-  while (size > 0 && is_link (*header))
-    {
-      size -= 2;
-      start += 2;
-    }
-  
   return start;
-}
-
-static void
-stack_grow (Heap *heap, Object object)
-{
-  obstack_grow (&heap->stack, &object, sizeof (object));
-}
-
-static void
-stack_ucs4_grow (Heap *heap, ucs4_t c)
-{
-  obstack_grow (&heap->stack, &c, sizeof (c));
-}
-
-static void
-stack_utf8_grow (Heap *heap, uint8_t *s, size_t len)
-{
-  obstack_grow (&heap->stack, s, len * sizeof (uint8_t));
-}
-
-static void
-stack_align (Heap *heap)
-{
-  size_t size = obstack_object_size (&heap->stack);
-  
-  obstack_blank (&heap->stack, ((size + ALIGNMENT_MASK) & ~ALIGNMENT_MASK) - size);
-}
-
-static Object
-stack_finish (Heap *heap)
-{
-  return (Object) obstack_finish (&heap->stack);
 }
 
 Object
@@ -283,9 +256,9 @@ is_boolean (Object obj)
 Object
 cons (Heap *heap, Object car, Object cdr)
 {
-  stack_grow (heap, car);
-  stack_grow (heap, cdr);
-  return stack_finish (heap) | PAIR_TYPE;
+  object_stack_grow (&heap->stack, car);
+  object_stack_grow (&heap->stack, cdr);
+  return object_stack_finish (&heap->stack) | PAIR_TYPE;
 }
 
 Object
@@ -313,15 +286,15 @@ cddr (Object pair)
 }
 
 void
-set_car (Object pair, Object car)
+set_car (Heap *heap, Object pair, Object car)
 {
-  ((Pointer) pair)[0] = car;
+  mutate (heap, ((Pointer) pair), car);
 }
 
 void
-set_cdr (Object pair, Object cdr)
+set_cdr (Heap *heap, Object pair, Object cdr)
 {
-  ((Pointer) pair)[1] = cdr;
+  mutate (heap, ((Pointer) pair) + 1, cdr);
 }
 
 bool
@@ -333,12 +306,13 @@ is_pair (Object object)
 Object
 make_string (Heap *heap, size_t length, ucs4_t c)
 {
-  stack_grow (heap, STRING_TYPE);
-  stack_grow (heap, length * sizeof (ucs4_t));
+  object_stack_grow (&heap->stack, STRING_TYPE);
+  object_stack_grow (&heap->stack, (length + 1) * sizeof (ucs4_t));
   for (int i = 0; i < length; ++i)
-    stack_ucs4_grow (heap, c);
-  stack_align (heap);
-  return stack_finish (heap) | POINTER_TYPE;
+    object_stack_ucs4_grow (&heap->stack, c);
+  object_stack_ucs4_grow (&heap->stack, 0);
+  object_stack_align (&heap->stack);
+  return object_stack_finish (&heap->stack) | POINTER_TYPE;
 }
 
 uint32_t *
@@ -350,7 +324,16 @@ string_bytes (Object string)
 size_t
 string_length (Object string)
 {
-  return ((Pointer) string)[0] / sizeof (ucs4_t);
+  return ((Pointer) string)[0] / sizeof (ucs4_t) - 1;
+}
+
+char *
+string_value (Object sym)
+{
+  void *s = u32_strconv_to_locale ((uint32_t const *) &((Pointer) sym)[1]);
+  if (s == NULL)
+    xalloc_die ();
+  return s;
 }
 
 ucs4_t
@@ -376,12 +359,12 @@ Object
 string (Heap *heap, Object chars)
 {
   int n;
-  stack_grow (heap, STRING_TYPE);
-  stack_grow (heap, 0);
+  object_stack_grow (&heap->stack, STRING_TYPE);
+  object_stack_grow (&heap->stack, 0);
   for (n = 0; !is_null (chars); chars = cdr (chars), ++n)
-    stack_ucs4_grow (heap, char_value (car (chars)));
-  stack_align (heap);
-  Object str = stack_finish (heap) | POINTER_TYPE;
+    object_stack_ucs4_grow (&heap->stack, char_value (car (chars)));
+  object_stack_align (&heap->stack);
+  Object str = object_stack_finish (&heap->stack) | POINTER_TYPE;
   ((Pointer) str)[0] = n * sizeof (ucs4_t);
   return str;  
 }
@@ -389,11 +372,12 @@ string (Heap *heap, Object chars)
 Object
 make_symbol (Heap *heap, uint8_t *s, size_t len)
 {
-  stack_grow (heap, SYMBOL_TYPE);
-  stack_grow (heap, len * sizeof (uint8_t));
-  stack_utf8_grow (heap, s, len);
-  stack_align (heap);
-  Object sym = stack_finish (heap) | POINTER_TYPE;
+  object_stack_grow (&heap->stack, SYMBOL_TYPE);
+  object_stack_grow (&heap->stack, (len + 1) * sizeof (uint8_t));
+  object_stack_utf8_grow (&heap->stack, s, len);
+  object_stack_grow0 (&heap->stack);
+  object_stack_align (&heap->stack);
+  Object sym = object_stack_finish (&heap->stack) | POINTER_TYPE;
   return symbol_table_intern (&heap->symbol_table, sym, false);
 }
 
@@ -413,7 +397,16 @@ symbol_bytes (Object sym)
 size_t
 symbol_length (Object sym)
 {
-  return ((Pointer) sym)[0] / sizeof (uint8_t);
+  return ((Pointer) sym)[0] / sizeof (uint8_t) - 1;
+}
+
+char *
+symbol_value (Object sym)
+{
+  void *s = u8_strconv_to_locale ((uint8_t const *) &((Pointer) sym)[1]);
+  if (s == NULL)
+    xalloc_die ();
+  return s;
 }
 
 Object
@@ -421,15 +414,16 @@ symbol (Heap *heap, Object chars)
 {
   int n;
   uint8_t s[6];
-  stack_grow (heap, SYMBOL_TYPE);
-  stack_grow (heap, 0);
+  object_stack_grow (&heap->stack, SYMBOL_TYPE);
+  object_stack_grow (&heap->stack, 0);
   for (n = 0; !is_null (chars); chars = cdr (chars), ++n)
     {
       size_t len = u8_uctomb (s, char_value (car (chars)), 6);
-      stack_utf8_grow (heap, s, len);
+      object_stack_utf8_grow (&heap->stack, s, len);
     }
-  stack_align (heap);
-  Object sym = stack_finish (heap) | POINTER_TYPE;
+  object_stack_grow0 (&heap->stack);
+  object_stack_align (&heap->stack);
+  Object sym = object_stack_finish (&heap->stack) | POINTER_TYPE;
   ((Pointer) sym)[0] = n * sizeof (uint8_t);
   return symbol_table_intern (&heap->symbol_table, sym, false);
 }
@@ -437,12 +431,12 @@ symbol (Heap *heap, Object chars)
 Object
 make_vector (Heap *heap, size_t length, Object object)
 {
-  stack_grow (heap, VECTOR_TYPE);
-  stack_grow (heap, WORDSIZE * length);
+  object_stack_grow (&heap->stack, VECTOR_TYPE);
+  object_stack_grow (&heap->stack, WORDSIZE * length);
   for (int i = 0; i < length; ++i)
-    stack_grow (heap, object);
-  stack_align (heap);
-  return stack_finish (heap) | POINTER_TYPE;
+    object_stack_grow (&heap->stack, object);
+  object_stack_align (&heap->stack);
+  return object_stack_finish (&heap->stack) | POINTER_TYPE;
 }
 
 size_t
@@ -468,6 +462,23 @@ is_vector (Object object)
 {
   return (object & OBJECT_TYPE_MASK) == POINTER_TYPE
     && (((Pointer) object)[-1] & HEADER_TYPE_MASK) == VECTOR_TYPE;
+}
+
+Object
+make_procedure (Heap *heap, Object code)
+{
+  object_stack_grow (&heap->stack, PROCEDURE_TYPE);
+  object_stack_grow (&heap->stack, compile (heap, code));
+  object_stack_grow (&heap->stack, code);
+  object_stack_align (&heap->stack);
+  return object_stack_finish (&heap->stack) | POINTER_TYPE;
+}
+
+bool
+is_procedure (Object obj)
+{
+  return (obj && OBJECT_TYPE_MASK) == POINTER_TYPE
+    &&(((Pointer) obj)[-1] & HEADER_TYPE_MASK) == PROCEDURE_TYPE;
 }
 
 /* Exact numbers */

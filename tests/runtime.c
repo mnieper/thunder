@@ -25,12 +25,15 @@
 #include <stddef.h>
 #include <string.h>
 
+#include "runtime.h"
 #include "vmcommon.h"
 #include "macros.h"
 
 int
 main (int argc, char *argv)
 {
+  init ();
+  
   Heap heap;
   heap_init (&heap, 1ULL << 20);
 
@@ -49,6 +52,8 @@ main (int argc, char *argv)
 
   p = exact_number (&heap, -8, 2);
   ASSERT (fixnum (p) == -4);
+
+  ASSERT (length (list (&heap, make_char ('a'), make_char ('b'))) == 2);
   
   heap_destroy (&heap);
 }

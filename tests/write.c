@@ -75,6 +75,8 @@ check_write (uint8_t *b, char const *s)
 
 int main (int argc, char *argv[])
 {
+  init ();
+  
   setlocale (LC_ALL, "");
 
   heap_init (&heap, 1ULL << 20);

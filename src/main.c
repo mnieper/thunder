@@ -71,8 +71,8 @@ int main (int argc, char *argv[])
 	print_help (stderr);
       }
 
+  vm_init ();
   Vm *vm = vm_create ();
-
   vm_free (vm);
 }
 

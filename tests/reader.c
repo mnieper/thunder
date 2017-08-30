@@ -36,7 +36,7 @@
 
 static Heap heap;
 
-bool
+static bool
 check_number (uint8_t const *s, int radix)
 {
   Object obj = read_number (&heap, s, strlen (s), radix);
@@ -44,7 +44,7 @@ check_number (uint8_t const *s, int radix)
   return res;
 }
 
-bool
+static bool
 check_datum (uint8_t *b, bool (* predicate) (Object obj))
 {
   char *s = u8_strconv_to_encoding (b, locale_charset (), iconveh_question_mark); 
@@ -67,10 +67,18 @@ check_datum (uint8_t *b, bool (* predicate) (Object obj))
   return res;
 }
 
+static bool
+is_quote (Object obj)
+{
+  return obj == SYMBOL(QUOTE);
+}
+
 #include "reader.h"
 
 int main (int argc, char *argv[])
 {
+  init ();
+
   setlocale (LC_ALL, "");
 
   heap_init (&heap, 1ULL << 20);
@@ -89,6 +97,8 @@ int main (int argc, char *argv[])
   ASSERT (check_datum (u8"#i1/2", is_inexact_number));
   ASSERT (check_datum (u8".3", is_inexact_number));
 
+  ASSERT (check_datum (u8"quote", is_quote));
+  
   ASSERT (check_number (u8"42", 10));
   ASSERT (check_number (u8"1@1", 10));
   ASSERT (check_number (u8"1e3@2", 10));

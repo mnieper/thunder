@@ -67,4 +67,10 @@
 #define stack_pop(stack)			\
   (*((stack)->base + --(stack)->items))
 
+#define stack_size(stack)			\
+  ((stack)->items)
+
+#define STACK_FOREACH(stack, var)				\
+  for ((var) = (stack)->base; (var) < (stack)->base + (stack)->items; ++(var))
+  
 #endif /* STACK_H_INCLUDED */

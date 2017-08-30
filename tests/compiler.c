@@ -21,48 +21,58 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include <string.h>
+#include <locale.h>
+#include <stdio.h>
 
+#include "assert.h"
+#include "localcharset.h"
 #include "macros.h"
+#include "uniconv.h"
+#include "unitypes.h"
 #include "vmcommon.h"
 
-bool
-test_image (Heap *heap, char *s)
+static Heap heap;
+
+Object
+read_string (uint8_t *b)
 {
+  char *s = u8_strconv_to_encoding (b, locale_charset (), iconveh_question_mark); 
   FILE *in = fmemopen (s, strlen (s), "r");
-  Object e = load (heap, in, NULL);
-  fclose (in);
 
-  char *buf;
-  size_t n;
+  Reader reader;
+  reader_init (&reader, &heap, in);
+
+  Object obj;
+  assert (reader_read (&reader, &obj, NULL, NULL));
   
-  FILE *out = open_memstream (&buf, &n);
-  dump (e, out);
-  fclose (out);
+  reader_destroy (&reader);
 
-  bool res = strcmp (s, buf) == 0;
-  free (buf);
-  return res;
-};
+  fclose (in);
+  free (s);
+
+  return obj;
+}
 
 int
 main (int argc, char *argv)
 {
   init ();
-
-  Heap heap;
-  heap_init (&heap, 1ULL << 24);
-
-  ASSERT(test_image (&heap, "'symbol\n"));
-  ASSERT(test_image (&heap,
-		     "(define $0 \"string\")\n"
-		     "$0\n"));
-  ASSERT(test_image (&heap,
-		     "(define $1 (cons #f #f))\n"
-		     "(define $0 (vector $1 $1))\n"
-		     "(set-car! $1 $0)\n"
-		     "(set-cdr! $1 $1)\n"
-                     "$0\n"));
   
-  heap_destroy (&heap);
+  heap_init (&heap, 1ULL << 16);
+  
+  Object code = read_string
+    ("((entry)\n"
+     " (prepare)\n"
+     " (pushargi \"Hello, World!\n\")\n"
+     " (ellipsis)"
+     " (finishi &printf)"
+     " (ret))\n");
+
+  Object obj = compile (&heap, code);
+  ASSERT (is_assembly (obj));
+
+  // XXX
+  call (obj, 0, NULL);
+
+  heap_destroy (&heap);  
 }

@@ -18,6 +18,7 @@
  * <http://www.gnu.org/licenses/>.
  */
 
+
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
@@ -25,12 +26,15 @@
 #include <stddef.h>
 #include <string.h>
 
-#include "vmcommon.h"
 #include "macros.h"
+#include "vmcommon.h"
+
 
 int
 main (int argc, char *argv)
 {
+  init ();
+
   Heap heap;
   heap_init (&heap, 1ULL << 20);
   Object p;
@@ -59,6 +63,7 @@ main (int argc, char *argv)
   ASSERT (is_symbol (p));
   ASSERT (symbol_length (p) == strlen (u8"symbol"));
   ASSERT (memcmp (symbol_bytes (p), u8"symbol", strlen (u8"symbol")) == 0);
+  ASSERT (is_symbol (SYMBOL(QUOTE)));
   
   p = make_string (&heap, 2, 64);
   ASSERT (is_string (p));

@@ -17,19 +17,40 @@
  *      Marc Nieper-Wißkirchen
  */
 
+#ifdef HAVE_CONFIG_H
+# include <config.h>
+#endif
+#include <ltdl.h>
+#include <stdbool.h>
+#include <stdlib.h>
 
-#ifndef LIBTHUNDER_H_INCLUDED
-#define LIBTHUNDER_H_INCLUDED
+#include "error.h"
+#include "vmcommon.h"
 
-typedef struct vm Vm;
+static bool initialized = false;
+
+static void
+finish (void)
+{
+  lt_dlexit ();
+  
+  finish_compiler ();
+  finish_symbols ();
+}
 
 void
-vm_init (void);
+init (void)
+{
+  if (initialized)
+    return;
 
-Vm *
-vm_create (void);
+  LTDL_SET_PRELOADED_SYMBOLS ();
+  if (lt_dlinit () != 0)
+    error (EXIT_FAILURE, 0, "%s", lt_dlerror ());
+  
+  init_symbols ();
+  init_compiler ();  
 
-void
-vm_free (Vm *);
-
-#endif /* LIBTHUNDER_H_INCLUDED */
+  initialized = true;
+  atexit (finish);
+}

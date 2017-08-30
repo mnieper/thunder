@@ -29,6 +29,8 @@
 int
 main (int argc, char *argv)
 {
+  init ();
+  
   Heap heap;
   heap_init (&heap, 1ULL << 20);
 

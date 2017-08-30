@@ -44,6 +44,15 @@ main (int argc, char *argv)
 
   for (int i = 0; i < 100; ++i)
     stack_push (&s, i);
+
+  ASSERT (stack_size (&s) == 100);
+
+  int *j;
+  int n = 0;
+  STACK_FOREACH (&s, j)
+    n += *j;
+  ASSERT (n == 4950);
+  
   for (int i = 99; i >= 0; i--)
     ASSERT (stack_pop (&s) == i);
   ASSERT (stack_is_empty (&s));

@@ -16,7 +16,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-AM_CPPFLAGS = -I$(top_srcdir)/include -I$(top_srcdir)/lib -I$(top_builddir)/lib
+AM_CPPFLAGS = -I$(top_srcdir)/include -I$(top_builddir)/lib
+AM_LDFLAGS = -dlopen self
 
 bin_PROGRAMS = thunder
 thunder_SOURCES = main.c

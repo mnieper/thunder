@@ -34,58 +34,59 @@
 #include "unitypes.h"
 #include "xalloc.h"
 
-#define SYMBOLS						\
-  ENTRY (QUOTE, u8"quote")				\
-  ENTRY (QUASIQUOTE, u8"quasiquote")			\
-  ENTRY (UNQUOTE, u8"unquote")				\
-  ENTRY (UNQUOTE_SPLICING, u8"unquote-splicing")	\
-  ENTRY (DEFINE, u8"define")				\
-  ENTRY (CONS, u8"cons")				\
-  ENTRY (SET_CAR, u8"set-car!")				\
-  ENTRY (SET_CDR, u8"set-cdr!")				\
-  ENTRY (VECTOR, u8"vector")				\
-  ENTRY (VECTOR_SET, u8"vector-set!")			\
-  ENTRY (STRING, u8"string")				\
-  ENTRY (SYMBOL, u8"symbol")
+typedef jit_pointer_t EntryPoint;
+
+struct assembly
+{
+  jit_state_t *jit;
+  struct obstack data;
+  EntryPoint *entry_points;
+  bool clear;
+};
+typedef struct assembly Assembly[1];
 
 #define SYMBOL(id) symbols[SYMBOL_##id]
 
-#define RESOURCES					\
-  ENTRY (EXACT_NUMBER, mpq_t, mpq_init, mpq_clear)	\
-  ENTRY (INEXACT_NUMBER, mpc_t, complex_init, mpc_clear)
-
-#define obstack_chunk_alloc xmalloc
-#define obstack_chunk_free  free
+/* TODO (XXX): Move resources to resource.def. */
+#define RESOURCES						\
+  ENTRY (EXACT_NUMBER, mpq_t, mpq_init, mpq_clear)		\
+  ENTRY (INEXACT_NUMBER, mpc_t, complex_init, mpc_clear)	\
+  ENTRY (ASSEMBLY, Assembly, assembly_init, assembly_destroy)
 
 #define WORDSIZE       (sizeof (Object))
 #define ALIGNMENT      (2 * WORDSIZE)
 #define ALIGNMENT_MASK (ALIGNMENT - 1)
+
+#define NONE 0
 
 #define OBJECT_TYPE_MASK ALIGNMENT_MASK
 #define PAIR_TYPE        0
 #define IMMEDIATE_TYPE   1
 #define HEADER_TYPE      2
 #define LINK_TYPE        3
-#define POINTER_TYPE     WORDSIZE
+#define POINTER_TYPE     WORDSIZE /* 4 or 8 */
 #define MARKED_TYPE      5
 
-#define HEADER_TYPE_MASK  0xffff
+#define HEADER_TYPE_MASK  0xff7f
 #define BINARY_TYPE       0x10
 #define UNMANAGED_TYPE    0x20
+#define WELL_KNOWN_SYMBOL 0x80
 #define HEADER_SIZE_SHIFT 16
-#define MAKE_HEADER_TYPE(type) (type * 0x100 | HEADER_TYPE)
-#define HEADER_SIZE(words) (words << HEADER_PAYLOAD_SHIFT)
+#define MAKE_HEADER_TYPE(type) ((type) * 0x100 | HEADER_TYPE)
+#define HEADER_SIZE(words) ((words) << HEADER_SIZE_SHIFT)
 
-#define STRING_TYPE         (MAKE_HEADER_TYPE (0) | BINARY_TYPE)
-#define SYMBOL_TYPE         (MAKE_HEADER_TYPE (1) | BINARY_TYPE)
-#define BYTEVECTOR_TYPE     (MAKE_HEADER_TYPE (2) | BINARY_TYPE)
-#define PORT_TYPE           (MAKE_HEADER_TYPE (3) | BINARY_TYPE | HEADER_SIZE (2))
-#define EXACT_NUMBER_TYPE   (MAKE_HEADER_TYPE (4) | UNMANAGED_TYPE)
-#define INEXACT_NUMBER_TYPE (MAKE_HEADER_TYPE (5) | UNMANAGED_TYPE)
-#define EPHEMERON_TYPE      (MAKE_HEADER_TYPE (6) | BINARY_TYPE | HEADER_SIZE (6))
-#define CLOSURE_TYPE        MAKE_HEADER_TYPE (7)
-#define VECTOR_TYPE         MAKE_HEADER_TYPE (8)
-#define RECORD_TYPE         MAKE_HEADER_TYPE (9)
+#define STRING_TYPE            (MAKE_HEADER_TYPE (0) | BINARY_TYPE)
+#define SYMBOL_TYPE            (MAKE_HEADER_TYPE (1) | BINARY_TYPE)
+#define BYTEVECTOR_TYPE        (MAKE_HEADER_TYPE (2) | BINARY_TYPE)
+#define PORT_TYPE              (MAKE_HEADER_TYPE (3) | BINARY_TYPE | HEADER_SIZE (2))
+#define EXACT_NUMBER_TYPE      (MAKE_HEADER_TYPE (4) | UNMANAGED_TYPE)
+#define INEXACT_NUMBER_TYPE    (MAKE_HEADER_TYPE (5) | UNMANAGED_TYPE)
+#define EPHEMERON_TYPE         (MAKE_HEADER_TYPE (6) | BINARY_TYPE | HEADER_SIZE (6))
+#define CLOSURE_TYPE           MAKE_HEADER_TYPE (7)
+#define VECTOR_TYPE            MAKE_HEADER_TYPE (8)
+#define RECORD_TYPE            MAKE_HEADER_TYPE (9)
+#define PROCEDURE_TYPE         (MAKE_HEADER_TYPE (10) | HEADER_SIZE (2))
+#define ASSEMBLY_TYPE          (MAKE_HEADER_TYPE (11) | UNMANAGED_TYPE)
 
 #define IMMEDIATE_TYPE_MASK       0xff
 #define IMMEDIATE_PAYLOAD_SHIFT   8
@@ -118,6 +119,9 @@ header_type (Pointer pointer);
 bool
 is_binary (Object header);
 
+bool
+is_well_known_symbol (Pointer pointer);
+
 size_t
 object_size (Pointer pointer);
 
@@ -135,12 +139,58 @@ make_mark (Pointer to);
 
 typedef Hash_table MutationTable;
 
+
+/* Object stacks */
+
+typedef struct object_stack ObjectStack;
+struct object_stack
+{
+  struct obstack obstack;
+  void *base;
+};
+
+void
+object_stack_init (ObjectStack *restrict stack);
+
+void
+object_stack_clear (ObjectStack *restrict stack);
+
+void
+object_stack_destroy (ObjectStack *restrict stack);
+
+void
+object_stack_grow (ObjectStack *restrict stack, Object obj);
+
+void
+object_stack_grow0 (ObjectStack *restrict stack);
+
+void
+object_stack_ucs4_grow (ObjectStack *restrict stack, ucs4_t c);
+
+void
+object_stack_utf8_grow (ObjectStack *restrict stack, uint8_t *s, size_t len);
+
+void
+object_stack_align (ObjectStack *restrict stack);
+
+Object
+object_stack_finish (ObjectStack *restrict stack);
+
+
+/* Symbol table */
+
 typedef struct symbol_table SymbolTable;
 struct symbol_table
 {
   Hash_table *nursery_table;
   Hash_table *heap_table;
 };
+
+void
+init_symbols (void);
+
+void
+finish_symbols (void);
 
 void
 symbol_table_init (SymbolTable *restrict symbol_table);
@@ -153,6 +203,7 @@ symbol_table_intern (SymbolTable *restrict symbol_table, Object sym, bool gc);
 
 Object
 symbol_table_clear (SymbolTable *restrict symbol_table, bool major_gc);
+
 
 /* Resource manager */
 
@@ -232,8 +283,7 @@ struct heap
   MutationTable *mutation_table;
   SymbolTable symbol_table;
   ResourceManager resource_manager;
-  struct obstack stack;
-  void *stack_base;
+  ObjectStack stack;
 };
 
 void
@@ -257,6 +307,31 @@ dump (Object obj, FILE *out);
 
 Object
 load (Heap *heap, FILE *out, char const *filename);
+
+/* Compiler */
+
+void
+init_compiler (void);
+
+void
+finish_compiler (void);
+
+void
+assembly_init (Assembly assembly);
+
+void
+assembly_destroy (Assembly assembly);
+
+Object
+compile (Heap *heap, Object code);
+
+bool
+is_assembly (Object obj);
+
+int
+call (Object assembly, size_t entry, void *data);
+
+extern int (*trampoline) (void *f, void *arg);
 
 /* Scheme objects */
 
@@ -315,10 +390,10 @@ Object
 cddr (Object pair);
 
 void
-set_car (Object pair, Object car);
+set_car (Heap *heap, Object pair, Object car);
 
 void
-set_cdr (Object pair, Object cdr);
+set_cdr (Heap *heap, Object pair, Object cdr);
 
 bool
 is_pair (Object object);
@@ -334,6 +409,9 @@ string_length (Object s);
 
 ucs4_t
 string_ref (Object string, size_t index);
+
+char *
+string_value (Object sym);
 
 void
 string_set (Object string, size_t index, ucs4_t c);
@@ -358,6 +436,9 @@ symbol_length (Object symbol);
 
 Object
 symbol (Heap *heap, Object chars);
+
+char *
+symbol_value (Object sym);
 
 Object
 make_vector (Heap *heap, size_t length, Object object);
@@ -392,6 +473,13 @@ is_inexact_number (Object object);
 mpc_t *
 inexact_number_value (Object num);
 
+Object
+make_procedure (Heap *heap, Object code);
+
+bool
+is_procedure (Object obj);
+
+
 /* Runtime */
 bool
 is_list (Object obj);
@@ -405,6 +493,12 @@ exact_number (Heap *heap, long int n, unsigned long int d);
 int
 fixnum (Object number);
 
+void
+assert_list (Object obj);
+
+void
+assert_symbol (Object obj);
+
 /* Numbers */
 
 void
@@ -416,8 +510,8 @@ get_z_10exp (mpz_t quo, mpfr_t inexact);
 void
 inexact_to_exact (mpq_t exact, mpfr_t inexact);
 
-/* Scheme reader */
 
+/* Scheme reader */
 typedef struct reader
 {
   void *scanner;
@@ -450,10 +544,10 @@ reader_read (Reader const *restrict reader, Object *restrict object, Location *l
 typedef enum symbol Symbol;
 enum symbol
   {
-#define ENTRY(id, name)			\
+#define EXPAND_SYMBOL(id, name)			\
     SYMBOL_##id,
-    SYMBOLS
-#undef ENTRY
+#   include "symbols.def"
+#undef EXPAND_SYMBOL
     SYMBOL_COUNT
   };
 
@@ -467,6 +561,10 @@ scheme_write (Object obj, FILE *out);
 
 char *
 object_get_str (Object obj);
+
+/* Initialization */
+void
+init (void);
 
 /* Initial symbols */
 

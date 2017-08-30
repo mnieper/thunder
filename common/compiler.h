@@ -17,19 +17,9 @@
  *      Marc Nieper-Wißkirchen
  */
 
+#ifndef COMPILER_H_INCLUDED
+#define COMPILER_H_INCLUDED
 
-#ifndef LIBTHUNDER_H_INCLUDED
-#define LIBTHUNDER_H_INCLUDED
+#define INSTRUCTION(name) SYMBOL(INSTRUCTION_##name)
 
-typedef struct vm Vm;
-
-void
-vm_init (void);
-
-Vm *
-vm_create (void);
-
-void
-vm_free (Vm *);
-
-#endif /* LIBTHUNDER_H_INCLUDED */
+#endif /* COMPILER_H_INCLUDED */
