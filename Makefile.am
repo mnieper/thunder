@@ -18,6 +18,6 @@
 
 ACLOCAL_AMFLAGS = -I m4
 
-SUBDIRS = lib common include libvm src doc tests
+SUBDIRS = lightning lib common include libvm src doc tests 
 
 EXTRA_DIST = m4/gnulib-cache.m4

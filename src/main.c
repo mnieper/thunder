@@ -35,6 +35,14 @@
 static void print_help (FILE *out);
 static void print_version (void);
 
+static Vm *vm;
+
+static void
+free_vm (void)
+{
+  vm_free (vm);
+}
+
 int main (int argc, char *argv[])
 {
   size_t head_size = 1ULL << 30;
@@ -72,8 +80,8 @@ int main (int argc, char *argv[])
       }
 
   vm_init ();
-  Vm *vm = vm_create ();
-  vm_free (vm);
+  vm = vm_create ();
+  atexit (free_vm);
 }
 
 static void

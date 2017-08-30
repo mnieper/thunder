@@ -1,5 +1,8 @@
 * Building Thunder
-** Distribute libltdl and lightning with Thunder.
+** Distribute libltdl with Thunder.
+
+* Thunder executable
+** Ignore shebang when reading initial file.
 
 * Assembler
 ** Emulate R3 and V3.

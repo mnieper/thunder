@@ -70,4 +70,5 @@ AC_CONFIG_FILES([Makefile
 		 src/Makefile
 		 doc/Makefile
 		 tests/Makefile])
+AC_CONFIG_SUBDIRS([lightning])
 AC_OUTPUT
