@@ -16,7 +16,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-AM_CPPFLAGS = -I$(top_srcdir)/include -I$(top_builddir)/lib -I$(top_srcdir)/common
+AM_CPPFLAGS = -I$(top_srcdir)/include -I$(top_builddir)/lib	\
+-I$(top_srcdir)/common -I$(top_srcdir)/lightning/include
 AM_LDFLAGS = -dlopen self
 
 LDADD = $(top_srcdir)/common/libvmcommon.la
