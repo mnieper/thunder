@@ -26,7 +26,9 @@
 #include <stddef.h>
 #include <string.h>
 
+#include "compiler.h"
 #include "macros.h"
+#include "runtime.h"
 #include "vmcommon.h"
 
 
@@ -81,6 +83,12 @@ main (int argc, char *argv)
   ASSERT (is_char (vector_ref (p, 1)));
   ASSERT (is_char (vector_ref (p, 2)));
   ASSERT (vector_length (p) == 3);
+
+  Object proc = make_procedure (&heap, list (&heap,
+					     list (&heap, INSTRUCTION(entry)),
+					     list (&heap, INSTRUCTION(ret))));
+  ASSERT (is_procedure (proc));
+  ASSERT (assembly_entry_point_number (procedure_assembly (proc)) == 1);
 
   mpq_t r;
   mpq_t *q;

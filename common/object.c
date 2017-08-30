@@ -474,12 +474,71 @@ make_procedure (Heap *heap, Object code)
   return object_stack_finish (&heap->stack) | POINTER_TYPE;
 }
 
+/* TODO (XXX): Lift the assembly functions to the procedure level. */
+Object
+procedure_assembly (Object proc)
+{
+  return ((Pointer) proc)[0];
+}
+
 bool
 is_procedure (Object obj)
 {
-  return (obj && OBJECT_TYPE_MASK) == POINTER_TYPE
-    &&(((Pointer) obj)[-1] & HEADER_TYPE_MASK) == PROCEDURE_TYPE;
+  return (obj & OBJECT_TYPE_MASK) == POINTER_TYPE
+    && (((Pointer) obj)[-1] & HEADER_TYPE_MASK) == (PROCEDURE_TYPE & HEADER_TYPE_MASK);
 }
+
+Object
+make_closure (Heap *heap, Object proc, size_t slots, Object obj)
+{
+  Object assembly = procedure_assembly (proc);
+  size_t entries = assembly_entry_point_number (assembly);
+  EntryPoint *entry_points = assembly_entry_points (assembly);
+  
+  object_stack_grow (&heap->stack, CLOSURE_TYPE);
+  object_stack_grow (&heap->stack, (1 + slots + 2 * entries) * WORDSIZE);
+  size_t offset = 2;
+  for (int i = 0; i < entries; ++i)
+    {
+      object_stack_grow (&heap->stack, offset * WORDSIZE | LINK_TYPE);
+      object_stack_grow (&heap->stack, (Object) entry_points [i]);
+      offset += 2;
+    }
+  for (int i = 0; i < slots; ++i)
+    object_stack_grow (&heap->stack, obj);
+  object_stack_grow (&heap->stack, proc);
+  object_stack_align (&heap->stack);
+  return object_stack_finish (&heap->stack) | POINTER_TYPE;
+}
+
+Object
+closure_procedure (Object closure)
+{
+  size_t size = ((Pointer) closure) [0];
+  return ((Pointer) closure)[size];
+}
+
+Object
+closure_ref (Object closure, size_t index)
+{
+  size_t size = ((Pointer) closure) [0];
+  return ((Pointer) closure)[size - index - 1];
+}
+
+Object
+closure_set (Heap *heap, Object closure, size_t index, Object val)
+{
+  size_t size = ((Pointer) closure) [0];
+  mutate (heap, ((Pointer) closure) + size - index - 1, val);  
+}
+
+bool
+is_closure (Object obj)
+{
+  return (obj && OBJECT_TYPE_MASK) == POINTER_TYPE
+    &&(((Pointer) obj)[-1] & HEADER_TYPE_MASK) == CLOSURE_TYPE;
+}
+
 
 /* Exact numbers */
 

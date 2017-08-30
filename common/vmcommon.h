@@ -41,6 +41,7 @@ struct assembly
   jit_state_t *jit;
   struct obstack data;
   EntryPoint *entry_points;
+  size_t entry_point_number;
   bool clear;
 };
 typedef struct assembly Assembly[1];
@@ -328,6 +329,12 @@ compile (Heap *heap, Object code);
 bool
 is_assembly (Object obj);
 
+size_t
+assembly_entry_point_number (Object assembly);
+
+EntryPoint *
+assembly_entry_points (Object assembly);
+
 int
 call (Object assembly, size_t entry, void *data);
 
@@ -476,9 +483,20 @@ inexact_number_value (Object num);
 Object
 make_procedure (Heap *heap, Object code);
 
+Object
+procedure_assembly (Object proc);
+
 bool
 is_procedure (Object obj);
 
+Object
+closure_procedure (Object closure);
+
+Object
+closure_ref (Object closure, size_t index);
+
+Object
+closure_set (Heap *heap, Object closure, size_t index, Object val);
 
 /* Runtime */
 bool

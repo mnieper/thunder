@@ -446,7 +446,8 @@ compile (Heap *heap, Object code)
   jit_epilog ();
 
   jit_emit ();
-  assembly->entry_points = XNMALLOC (stack_size (&entry_points), EntryPoint);
+  assembly->entry_point_number = stack_size (&entry_points);
+  assembly->entry_points = XNMALLOC (assembly->entry_point_number, EntryPoint);
   {
     jit_node_t **label;
     EntryPoint *p = assembly->entry_points;
@@ -472,6 +473,18 @@ is_assembly (Object obj)
 {
   return (obj & OBJECT_TYPE_MASK) == POINTER_TYPE
     && (((Pointer) obj)[-1] & HEADER_TYPE_MASK) == ASSEMBLY_TYPE;
+}
+
+size_t
+assembly_entry_point_number (Object assembly)
+{
+  return (*((Assembly *) assembly)) [0].entry_point_number;
+}
+
+EntryPoint *
+assembly_entry_points (Object assembly)
+{
+  return (*((Assembly *) assembly)) [0].entry_points;
 }
 
 int
