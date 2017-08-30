@@ -26,7 +26,7 @@ AC_CONFIG_MACRO_DIR([m4])
 
 AM_INIT_AUTOMAKE([
   gnits
-  1.15
+  1.14.1
 ])
 
 # Checks for programs.
