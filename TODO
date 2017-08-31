@@ -20,6 +20,15 @@
 * Distribution
 ** Add missing files, in particular header files.
 
+* Development
+** Add pretty-printer to gdb for Scheme objects.
+
+* Instructions
+** Allow to load dynamic libraries.
+
+* Source
+** Write and use a C-library for trampolines for recursive code.
+
 
 Local Variables:
 mode: outline

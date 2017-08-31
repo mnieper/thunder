@@ -125,13 +125,9 @@ dump_string (Object obj, FILE *out)
 static void
 dump_procedure (Object proc, FILE *out)
 {
-  fputs ("(code", out);
-  for (Object code = procedure_code (proc); !is_null (code); code = cdr (code))
-    {
-      fputc (' ', out);
-      /* FIXME(XXX): Not every object in code may be printable. */
-      scheme_write (car (code), out);
-    }
+  fputs ("(code '", out);
+  /* FIXME(XXX): Not every object in code may be printable. */
+  scheme_write (procedure_code (proc), out);
   fputc (')', out);
 }
 

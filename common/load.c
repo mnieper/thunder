@@ -84,7 +84,7 @@ insert (Hash_table *obj_table, Object id)
 Object
 load_object (Heap *heap, Hash_table *obj_table, Object expr, Location *loc, char const *filename)
 {
-  enum frame_type { FRAME_PAIR, FRAME_VECTOR, FRAME_CLOSURE };
+  enum frame_type { FRAME_PAIR, FRAME_VECTOR, FRAME_CODE, FRAME_CLOSURE };
   
   struct frame
   {
@@ -92,24 +92,71 @@ load_object (Heap *heap, Hash_table *obj_table, Object expr, Location *loc, char
     Object obj;
     Object expr;
     ptrdiff_t index;
+    ptrdiff_t len;
+    size_t depth;
     struct frame *prev;
   };
   
   struct frame *top = NULL;
+
+  size_t depth = 0; /* used for quasiquotation */
   
   do
     {
-      if (is_list (expr))
+      /* TODO: Simplify logic. */
+    again:
+      /* TODO(XXX): Warn when () is used unqoted and not in depth >= 1. */
+      /* TODO(XXX): Implement unquote-splicing. */
+      /* TODO(XXX): Implement quasiquoting a vector literal. */
+      if (is_pair (expr))
+	/* TODO(XXX): Check for improper lists if depth == 0. */
 	{
 	  Object op = car (expr);
-	  if (op == SYMBOL(QUOTE))
+	  if (op == SYMBOL(QUASIQUOTE))
+	    {
+	      if (depth++ == 0)
+		{
+		  expr = cadr (expr);
+		  goto again;
+		}
+	    }
+	  if (op == SYMBOL(UNQUOTE) && (depth > 0))
+	    {
+	      if (--depth == 0)
+		{
+		  expr = cadr (expr);
+		  goto again;
+		}
+	    }
+	  if (depth > 0)
+	    {
+	      struct frame *frame = xmalloca (sizeof (struct frame));
+	      frame->type = FRAME_PAIR;
+	      frame->obj = cons (heap, make_undefined (), make_undefined ());
+	      frame->expr = expr;
+	      frame->index = 0;
+	      frame->len = 2;
+	      frame->depth = depth;
+	      frame->prev = top;
+	      top = frame;
+	    }
+	  else if (op == SYMBOL(QUOTE))
 	    expr = cadr (expr);
 	  else if (op == SYMBOL(STRING))
 	    expr = string (heap, cdr (expr));
 	  else if (op == SYMBOL(SYMBOL))
 	    expr = symbol (heap, cdr (expr));
 	  else if (op == SYMBOL(CODE))
-	    expr = make_procedure (heap, cdr (expr));
+	    {
+	      struct frame *frame = xmalloca (sizeof (struct frame));
+	      frame->type = FRAME_CODE;
+	      frame->expr = cdr (expr);
+	      frame->index = -1;
+	      frame->len = 0;
+	      frame->depth = depth;
+	      frame->prev = top;
+	      top = frame;
+	    }
 	  else if (op == SYMBOL(CONS))
 	    {
 	      struct frame *frame = xmalloca (sizeof (struct frame));
@@ -117,6 +164,8 @@ load_object (Heap *heap, Hash_table *obj_table, Object expr, Location *loc, char
 	      frame->obj = cons (heap, make_undefined (), make_undefined ());
 	      frame->expr = cdr (expr);
 	      frame->index = 0;
+	      frame->len = 2;
+	      frame->depth = depth;
 	      frame->prev = top;
 	      top = frame;
 	    }
@@ -125,9 +174,11 @@ load_object (Heap *heap, Hash_table *obj_table, Object expr, Location *loc, char
 	      struct frame *frame = xmalloca (sizeof (struct frame));
 	      frame->type = FRAME_VECTOR;
 	      frame->expr = cdr (expr);
-	      frame->obj = make_vector (heap, length (frame->expr), make_undefined ());
+	      frame->len = length (frame->expr);
+	      frame->obj = make_vector (heap, frame->len, make_undefined ());
 	      frame->index = 0;
 	      frame->prev = top;
+	      frame->depth = depth;
 	      top = frame;	      
 	    }
 	  else if (op == SYMBOL(CLOSURE))
@@ -135,7 +186,9 @@ load_object (Heap *heap, Hash_table *obj_table, Object expr, Location *loc, char
 	      struct frame *frame = xmalloca (sizeof (struct frame));
 	      frame->type = FRAME_CLOSURE;
 	      frame->expr = cdr (expr);
+	      frame->len = length (frame->expr) - 1;
 	      frame->index = -1;
+	      frame->depth = depth;
 	      frame->prev = top;
 	      top = frame;
 	    }
@@ -143,10 +196,7 @@ load_object (Heap *heap, Hash_table *obj_table, Object expr, Location *loc, char
 	    error_at_line (EXIT_FAILURE, 0, filename, loc->first_line,
 			   "invalid keyword: %s", object_get_str (op));
 	}
-      else if (is_pair (expr))
-	error_at_line (EXIT_FAILURE, 0, filename, loc->first_line,
-		       "dotted pair in source: %s", object_get_str (expr));
-      else if (is_symbol (expr))
+      else if (depth == 0 && is_symbol (expr))
 	{
 	  struct entry *entry = lookup (obj_table, expr);
 	  if (entry == NULL)
@@ -158,6 +208,8 @@ load_object (Heap *heap, Hash_table *obj_table, Object expr, Location *loc, char
       /* TODO: Simplify logic. */
       while (top != NULL)
 	{
+	  depth = top->depth;
+   
 	  if (top->index > 0)
 	    {
 	      switch (top->type)
@@ -176,14 +228,22 @@ load_object (Heap *heap, Hash_table *obj_table, Object expr, Location *loc, char
 		  break;
 		}
 	    }
-	  else if (top->index == 0 && top->type == FRAME_CLOSURE)
+	  else if (top->index == 0)
 	    {
-	      assert_procedure (expr);
-	      top->obj = make_closure (heap, expr, length (top->expr), make_undefined ());
+	      switch (top->type)
+		{
+		case FRAME_CODE:
+		  top->obj = make_procedure (heap, expr);
+		  break;
+		case FRAME_CLOSURE:
+		  assert_procedure (expr);
+		  top->obj = make_closure (heap, expr, top->len, make_undefined ());
+		  break;
+		}
 	    }
-	  
+
 	  struct frame *frame = top;
-	  if (is_null (frame->expr))
+	  if (frame->index == frame->len)
 	    {
 	      expr = frame->obj;
 	      top = frame->prev;
@@ -194,13 +254,25 @@ load_object (Heap *heap, Hash_table *obj_table, Object expr, Location *loc, char
 	  /* TODO (XXX): The three cases seem to be alike. */
 	  if (frame->type == FRAME_PAIR)
 	    {
-	      expr = car (frame->expr);
-	      frame->expr = cdr (frame->expr);
+	      if (depth == 0 || frame->index == 0)
+		{
+		  expr = car (frame->expr);
+		  frame->expr = cdr (frame->expr);
+		}
+	      else
+		expr = frame->expr;
 	      frame->index++;
 	      break;
 	    }
 	  else if (frame->type == FRAME_VECTOR)
 	    /* Vector */
+	    {
+	      expr = car (frame->expr);
+	      frame->expr = cdr (frame->expr);
+	      frame->index++;
+	      break;
+	    }
+	  else if (frame->type == FRAME_CODE)
 	    {
 	      expr = car (frame->expr);
 	      frame->expr = cdr (frame->expr);
@@ -247,7 +319,7 @@ load (Heap *heap, FILE *in, char const *filename)
   Reader reader;
   reader_init (&reader, heap, in);
   Location loc;
-
+  
   while (!is_eof_object (expr = checked_read (&reader, &loc, filename)))
     {
       if (is_pair (expr))

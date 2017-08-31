@@ -387,7 +387,6 @@ assembly_clear (Assembly assembly)
   assembly_destroy (assembly);
   assembly->jit = jit_new_state ();
   obstack_init (&assembly->data);
-  assembly->clear = false;
 #undef _jit
 }
 
@@ -462,7 +461,9 @@ compile (Heap *heap, Object code)
 
   label_table_free (labels);
   stack_destroy (&entry_points);
-  
+
+  assembly->clear = false;
+
   return (Object) res | POINTER_TYPE;
 #undef _jit
 #undef assembly

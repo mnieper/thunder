@@ -40,6 +40,9 @@ test_image (Heap *heap, char *s)
   dump (e, out);
   fclose (out);
 
+  // XXX
+  fprintf (stderr, "Vorher: %s\nDazwischen: %s\n Nachher: %s\n", s, "", buf);
+  
   bool res = strcmp (s, buf) == 0;
   free (buf);
   return res;
@@ -64,11 +67,11 @@ main (int argc, char *argv)
 		     "(set-cdr! $1 $1)\n"
                      "$0\n"));
   ASSERT(test_image (&heap,
-		     "(define $2 (code (entry) (ret)))\n"
+		     "(define $2 (code '((entry) (ret))))\n"
 		     "(define $3 (closure $2 #f))\n"
 		     "(define $1 (closure $2 #t))\n"
 		     "(define $0 (cons $1 $3))\n"
 		     "$0\n"));
-  
+
   heap_destroy (&heap);
 }
