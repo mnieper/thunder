@@ -4,6 +4,7 @@
 *.log
 *.o
 *.scan
+*.tar.gz
 .deps
 .libs
 Makefile

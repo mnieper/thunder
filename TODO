@@ -10,6 +10,13 @@
 * Garbage collector
 ** Implement ephemerons.
 
+* Documentation
+** Automatically create dist as CI artifact, and mention in README.
+** Setup GitLab pages, and mention in README.
+
+* Distribution
+** Add missing files, in particular header files.
+
 
 Local Variables:
 mode: outline

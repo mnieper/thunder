@@ -96,7 +96,14 @@ int main (int argc, char *argv[])
     error (EXIT_FAILURE, errno, "%s", filename);
   atexit (close_src);
 
-  /* Skip shebang */
+  if (fgetc (src) == '#' && (fgetc (src) == '!'))
+    {
+      while (fgetc (src) != '\n')
+	if (feof (src))
+	  break;
+    }
+  else
+    rewind (src);
   
   vm_init ();
   vm = vm_create ();

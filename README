@@ -1,0 +1,41 @@
+This is the README file for the Thunder distribution.
+Thunder is an implementation of a virtual machine.
+
+  Copyright (C) 2017 Marc Nieper-Wißkirchen
+
+  Copying and distribution of this file, with or without modification,
+  are permitted in any medium without royalty provided the copyright
+  notice and this notice are preserved.
+
+See the files ./INSTALL* for building and installation instructions.
+
+Primary distribution point: ???
+
+Home page: https://gitlab.com/nieper/thunder
+
+Developer page: http://savannah.gnu.org/projects/hello/
+- please file bug reports, patches and feature requests here if
+  possible.
+
+Bug reports:
+ Please include enough information for the maintainers to reproduce the
+ problem.  Generally speaking, that means:
+- the contents of any input files necessary to reproduce the bug
+  and command line invocations of the program(s) involved (crucial!).
+- a description of the problem and any samples of the erroneous output.
+- the version number of the program(s) involved (use --version).
+- hardware, operating system, and compiler versions (uname -a).
+- unusual options you gave to configure, if any (see config.status).
+- anything else that you think would be helpful.
+
+Patches are most welcome; if possible, please make them in git-am
+format, and include a suitable commit message.
+
+See README-dev for information on the development environment -- any
+interested parties are welcome.  If you're a programmer and wish to
+contribute, this should get you started.  If you're not a programmer,
+your help in writing test cases, checking the documentation against the
+implementation, translating the program strings to other languages,
+etc., would still be very much appreciated.
+
+Thunder is free software.  See the file COPYING for copying conditions.

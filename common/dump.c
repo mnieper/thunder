@@ -129,6 +129,7 @@ dump_procedure (Object proc, FILE *out)
   for (Object code = procedure_code (proc); !is_null (code); code = cdr (code))
     {
       fputc (' ', out);
+      /* FIXME(XXX): Not every object in code may be printable. */
       scheme_write (car (code), out);
     }
   fputc (')', out);

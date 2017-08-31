@@ -4,6 +4,7 @@
 /c++defs.h
 /dummy.c
 /warn-on-use.h
+/check.sh
 /test.sh
 /compiler
 /deque
