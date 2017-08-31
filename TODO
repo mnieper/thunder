@@ -14,6 +14,9 @@
 ** Automatically create dist as CI artifact, and mention in README.
 ** Setup GitLab pages, and mention in README.
 
+* Library
+** Add interface for handling Scheme objects to the library.
+
 * Distribution
 ** Add missing files, in particular header files.
 
