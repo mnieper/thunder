@@ -42,7 +42,11 @@ static bool
 has_location (Object obj)
 {
   // TODO (XXX): Records, ports, etc.
-  return is_string (obj) || is_pair (obj) || is_vector (obj) || is_closure (obj);
+  return is_string (obj)
+    || is_pair (obj)
+    || is_vector (obj)
+    || is_closure (obj)
+    || is_procedure (obj);
 }
 
 static void
@@ -192,7 +196,7 @@ scan_object (Object obj, gl_list_t obj_table)
   struct frame
   {
     Object obj;
-    size_t index;
+    ptrdiff_t index;
     struct frame *prev;
   };
 
@@ -208,7 +212,7 @@ scan_object (Object obj, gl_list_t obj_table)
 	    {
 	      struct frame *frame = xmalloca (sizeof (struct frame));
 	      frame->obj = obj;
-	      frame->index = 0;
+	      frame->index = is_closure (obj) ? -1 : 0;
 	      frame->prev = top;
 	      top = frame;
 	    }
@@ -257,20 +261,25 @@ scan_object (Object obj, gl_list_t obj_table)
 		  freea (frame);
 		  continue; /* while */
 		}
-	      obj = closure_ref (frame->obj, frame->index++);
+	      if (frame->index == -1)
+		obj = closure_procedure (frame->obj);
+	      else
+		obj = closure_ref (frame->obj, frame->index);
+	      frame->index++;
+	      break;
 	    }
 	}
     }
   while (top != NULL);
 }
 
-void
+static void
 dump_object (Object obj, gl_list_t obj_table, struct obstack *setters, FILE *out)
 {  
   struct frame
   {
     Object obj;
-    size_t index;
+    ptrdiff_t index;
     struct frame *prev;
   };
 
@@ -309,8 +318,12 @@ dump_object (Object obj, gl_list_t obj_table, struct obstack *setters, FILE *out
 	}
       else if (is_closure (obj))
 	{
-	  fputs ("(closure ", out);
-	  // TODO(XXX): output procedure and slots.
+	  fputs ("(closure", out);
+	  struct frame *frame = xmalloca (sizeof (struct frame));
+	  frame->obj = obj;
+	  frame->index = -1;
+	  frame->prev = top;
+	  top = frame;
 	}
       else if (is_string (obj))
 	dump_string (obj, out);
@@ -351,7 +364,7 @@ dump_object (Object obj, gl_list_t obj_table, struct obstack *setters, FILE *out
 		}
 	      break; /* while */
 	    }
-	  else
+	  else if (is_vector (frame->obj))
 	    /* Vector */
 	    {
 	      if (frame->index == vector_length (frame->obj))
@@ -366,28 +379,54 @@ dump_object (Object obj, gl_list_t obj_table, struct obstack *setters, FILE *out
 	      obj = vector_ref (frame->obj, frame->index++);
 	      break; /* while */
 	    }
+	  else
+	    /* Closure */
+	    {
+	      if (frame->index == closure_length (frame->obj))
+		{
+		  fputc (')', out);
+		  top = frame->prev;
+		  freea (frame);
+		  continue; /* while */
+		}
+	      fputc (' ', out);
+	      obj = frame->index < 0
+		? closure_procedure (frame->obj)
+		: closure_ref (frame->obj, frame->index);
+	      ++frame->index;
+	      break; /* while */
+	    }
 	}
 
     }
   while (top != NULL);
 }
 
-void
+static void
+dump_definition (struct entry *entry, gl_list_t obj_table, struct obstack *setters, FILE *out)
+{
+  fprintf (out, "(define $%ld ", entry->id);
+  dump_object (entry->obj, obj_table, setters, out);
+  fputs (")\n", out);
+  entry->defined = true;
+}
+static void
 dump_definitions (gl_list_t obj_table, struct obstack *setters, FILE *out)
 {
   gl_list_iterator_t iter = gl_list_iterator (obj_table);
   struct entry *entry;
   while (gl_list_iterator_next (&iter, (void const **) &entry, NULL))
-    {
-      fprintf (out, "(define $%ld ", entry->id);
-      dump_object (entry->obj, obj_table, setters, out);
-      fputs (")\n", out);
-      entry->defined = true;
-    }
+    if (is_string (entry->obj) || is_procedure (entry->obj))
+      dump_definition (entry, obj_table, setters, out);
+  gl_list_iterator_free (&iter);
+  iter = gl_list_iterator (obj_table);
+  while (gl_list_iterator_next (&iter, (void const **) &entry, NULL))
+    if (!is_string (entry->obj) && !is_procedure (entry->obj))
+      dump_definition (entry, obj_table, setters, out);
   gl_list_iterator_free (&iter);
 }
 
-void
+static void
 dump_setters (gl_list_t obj_table, struct obstack *setters, FILE *out)
 {
   struct setter *const end = obstack_next_free (setters);
@@ -397,22 +436,24 @@ dump_setters (gl_list_t obj_table, struct obstack *setters, FILE *out)
     {
       struct entry *entry = lookup (obj_table, setter->obj);
       if (is_pair (setter->obj))
-	{
-	  fprintf (out,
-		   "(set-%s! $%ld $%ld)\n",
-		   setter->index == 0 ? "car" : "cdr",
-		   entry->id,
-		   lookup (obj_table,
-			   (setter->index == 0 ? car (setter->obj) : cdr (setter->obj)))->id);
-	}
-      else
-	{
-	  fprintf (out,
-		   "(vector-set! $%ld %zd $%ld)\n",
-		   entry->id,
-		   setter->index,
-		   lookup (obj_table, (vector_ref (setter->obj, setter->index)))->id);
-	}
+	fprintf (out,
+		 "(set-%s! $%ld $%ld)\n",
+		 setter->index == 0 ? "car" : "cdr",
+		 entry->id,
+		 lookup (obj_table,
+			 (setter->index == 0 ? car (setter->obj) : cdr (setter->obj)))->id);
+      else if (is_vector (setter->obj))
+	fprintf (out,
+		 "(vector-set! $%ld %zd $%ld)\n",
+		 entry->id,
+		 setter->index,
+		 lookup (obj_table, (vector_ref (setter->obj, setter->index)))->id);
+      else /* closure */
+	fprintf (out,
+		 "(closure-set! $%ld %zd $%ld)\n",
+		 entry->id,
+		 setter->index,
+		 lookup (obj_table, (closure_ref (setter->obj, setter->index)))->id);
     }  
 }
 

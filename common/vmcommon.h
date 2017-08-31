@@ -486,6 +486,9 @@ make_procedure (Heap *heap, Object code);
 Object
 procedure_assembly (Object proc);
 
+size_t
+procedure_entry_count (Object proc);
+
 Object
 procedure_code (Object proc);
 
@@ -531,6 +534,9 @@ assert_list (Object obj);
 
 void
 assert_symbol (Object obj);
+
+void
+assert_procedure (Object obj);
 
 Object
 copy_object (Object obj);

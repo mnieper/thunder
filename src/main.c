@@ -95,6 +95,8 @@ int main (int argc, char *argv[])
   if (src == NULL)
     error (EXIT_FAILURE, errno, "%s", filename);
   atexit (close_src);
+
+  /* Skip shebang */
   
   vm_init ();
   vm = vm_create ();

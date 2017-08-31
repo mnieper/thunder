@@ -84,14 +84,14 @@ insert (Hash_table *obj_table, Object id)
 Object
 load_object (Heap *heap, Hash_table *obj_table, Object expr, Location *loc, char const *filename)
 {
-  enum frame_type { FRAME_PAIR, FRAME_VECTOR };
+  enum frame_type { FRAME_PAIR, FRAME_VECTOR, FRAME_CLOSURE };
   
   struct frame
   {
     enum frame_type type;
     Object obj;
     Object expr;
-    size_t index;
+    ptrdiff_t index;
     struct frame *prev;
   };
   
@@ -130,6 +130,15 @@ load_object (Heap *heap, Hash_table *obj_table, Object expr, Location *loc, char
 	      frame->prev = top;
 	      top = frame;	      
 	    }
+	  else if (op == SYMBOL(CLOSURE))
+	    {
+	      struct frame *frame = xmalloca (sizeof (struct frame));
+	      frame->type = FRAME_CLOSURE;
+	      frame->expr = cdr (expr);
+	      frame->index = -1;
+	      frame->prev = top;
+	      top = frame;
+	    }
 	  else
 	    error_at_line (EXIT_FAILURE, 0, filename, loc->first_line,
 			   "invalid keyword: %s", object_get_str (op));
@@ -162,7 +171,15 @@ load_object (Heap *heap, Hash_table *obj_table, Object expr, Location *loc, char
 		case FRAME_VECTOR:
 		  vector_set (heap, top->obj, top->index - 1, expr);
 		  break;
+		case FRAME_CLOSURE:
+		  closure_set (heap, top->obj, top->index - 1, expr);
+		  break;
 		}
+	    }
+	  else if (top->index == 0 && top->type == FRAME_CLOSURE)
+	    {
+	      assert_procedure (expr);
+	      top->obj = make_closure (heap, expr, length (top->expr), make_undefined ());
 	    }
 	  
 	  struct frame *frame = top;
@@ -174,6 +191,7 @@ load_object (Heap *heap, Hash_table *obj_table, Object expr, Location *loc, char
 	      continue;
 	    }
 
+	  /* TODO (XXX): The three cases seem to be alike. */
 	  if (frame->type == FRAME_PAIR)
 	    {
 	      expr = car (frame->expr);
@@ -181,8 +199,16 @@ load_object (Heap *heap, Hash_table *obj_table, Object expr, Location *loc, char
 	      frame->index++;
 	      break;
 	    }
-	  else
+	  else if (frame->type == FRAME_VECTOR)
 	    /* Vector */
+	    {
+	      expr = car (frame->expr);
+	      frame->expr = cdr (frame->expr);
+	      frame->index++;
+	      break;
+	    }
+	  else
+	    /* Closure */
 	    {
 	      expr = car (frame->expr);
 	      frame->expr = cdr (frame->expr);
@@ -296,7 +322,6 @@ load (Heap *heap, FILE *in, char const *filename)
 	      
 	  if (op == SYMBOL(VECTOR_SET))
 	    {
-
 	      Object id = cadr (expr);
 	      if (!is_symbol (id))
 		error_at_line (EXIT_FAILURE, 0, filename, loc.first_line,
@@ -320,6 +345,35 @@ load (Heap *heap, FILE *in, char const *filename)
 	      vector_set (heap, entry->obj, fixnum (index),
 			  load_object (heap, obj_table, cadr (cddr (expr)),
 				       &loc, filename));
+	      
+	      continue;
+	    }
+
+	  if (op == SYMBOL(CLOSURE_SET))
+	    {
+	      Object id = cadr (expr);
+	      if (!is_symbol (id))
+		error_at_line (EXIT_FAILURE, 0, filename, loc.first_line,
+			       "can't set a non-variable: %s", object_get_str (id));
+	      
+	      struct entry *entry = lookup (obj_table, id);
+	      if (entry == NULL)
+		error_at_line (EXIT_FAILURE, 0, filename, loc.first_line,
+			       "undefined variable: %s", object_get_str (id));
+
+	      if (!is_closure (entry->obj))
+		error_at_line (EXIT_FAILURE, 0, filename, loc.first_line,
+			       "not a closure: %s", object_get_str (id));
+
+	      Object index = car (cddr (expr));
+
+	      if (!is_exact_number (index))
+		error_at_line (EXIT_FAILURE, 0, filename, loc.first_line,
+			       "not an exact number: %s", object_get_str (index));
+	      
+	      closure_set (heap, entry->obj, fixnum (index),
+			   load_object (heap, obj_table, cadr (cddr (expr)),
+					&loc, filename));
 	      
 	      continue;
 	    }

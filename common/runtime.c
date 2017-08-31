@@ -109,6 +109,13 @@ assert_symbol (Object obj)
     error (EXIT_FAILURE, 0, "%s: %s", "not a symbol", object_get_str (obj));
 }
 
+void
+assert_procedure (Object obj)
+{
+  if (!is_procedure (obj))
+    error (EXIT_FAILURE, 0, "%s: %s", "not code", object_get_str (obj));
+}
+
 Object
 copy_object (Object obj)
 {

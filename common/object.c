@@ -481,6 +481,12 @@ procedure_assembly (Object proc)
   return ((Pointer) proc)[0];
 }
 
+size_t
+procedure_entry_count (Object proc)
+{
+  return assembly_entry_point_number (procedure_assembly (proc));
+}
+
 Object
 procedure_code (Object proc)
 {
@@ -548,8 +554,8 @@ closure_length (Object closure)
 bool
 is_closure (Object obj)
 {
-  return (obj && OBJECT_TYPE_MASK) == POINTER_TYPE
-    &&(((Pointer) obj)[-1] & HEADER_TYPE_MASK) == CLOSURE_TYPE;
+  return (obj & OBJECT_TYPE_MASK) == POINTER_TYPE
+    && (((Pointer) obj)[-1] & HEADER_TYPE_MASK) == CLOSURE_TYPE;
 }
 
 int

@@ -190,6 +190,8 @@ scheme_write (Object obj, FILE *out)
 	fputs ("()", out);
       else if (is_eof_object (obj))
 	fputs ("#<eof>", out);
+      else if (is_closure (obj))
+	fputs ("#<procedure>", out);
       else if (is_symbol (obj))
 	{
 	  size_t len;

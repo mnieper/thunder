@@ -64,7 +64,11 @@ main (int argc, char *argv)
 		     "(set-cdr! $1 $1)\n"
                      "$0\n"));
   ASSERT(test_image (&heap,
-		     "(code (entry) (ret))\n"));
+		     "(define $2 (code (entry) (ret)))\n"
+		     "(define $3 (closure $2 #f))\n"
+		     "(define $1 (closure $2 #t))\n"
+		     "(define $0 (cons $1 $3))\n"
+		     "$0\n"));
   
   heap_destroy (&heap);
 }
