@@ -1,5 +1,6 @@
 * Building Thunder
 ** Distribute libltdl with Thunder.
+** Add distribution and installations CI tests (with different docker image).
 
 * Thunder executable
 

@@ -226,6 +226,7 @@ get_fun (jit_state_t *_jit, LabelTable *labels, struct obstack *data, Object ope
 	  }
 	  break;
 	default:
+	  free (s);
 	  return (struct fun) { .label = label_table_insert (labels, _jit, operand, true) };
 	}
       free (s);
