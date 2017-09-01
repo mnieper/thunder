@@ -12,7 +12,7 @@
 
 * Documentation
 ** Automatically create dist as CI artifact, and mention in README.
-** Setup GitLab pages, and mention in README.
+** Setup GitLab pages; create dist in pages.
 
 * Library
 ** Add interface for handling Scheme objects to the library.

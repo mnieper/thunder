@@ -44,18 +44,11 @@ typedef VECTOR(jit_node_t *) EntryPointVector;
 static lt_dlhandle module;
 static jit_pointer_t *trampoline_return;
 
-
-/* Label table used by compiler */
-struct patch
-{
-};
-
 struct label
 {
   /* TODO: Handle forward flag.  Maintain patch table. */
   Object name;
   jit_node_t *jit_label;
-  VECTOR(struct patch) patches;
   bool forward;
 };
 
@@ -81,20 +74,10 @@ hasher (void const *entry, size_t n)
   return val % n;
 }
 
-static void
-freer (void *entry)
-{
-#define label ((struct label *) entry)
-  if (label->forward)
-    vector_destroy (&label->patches);
-#undef label
-  free (entry);
-}
-
 static LabelTable *
 label_table_create ()
 {
-  return hash_initialize (0, NULL, hasher, comparator, freer);
+  return hash_initialize (0, NULL, hasher, comparator, free);
 }
 
 static void
@@ -120,16 +103,8 @@ label_table_insert (LabelTable *table, jit_state_t *_jit, Object name, bool forw
 
       if (!forward)
 	{
-	  jit_link (label->jit_label);
-	  
-	  struct patch *patch;
-	  VECTOR_FOREACH (&label->patches, patch)
-	    {
-	      /* TODO(XXX) */
-	    }
-	  
+	  jit_link (label->jit_label);	  
 	  label->forward = false;
-	  vector_destroy (&label->patches);
 	}
       return label;
     }
@@ -138,7 +113,6 @@ label_table_insert (LabelTable *table, jit_state_t *_jit, Object name, bool forw
     {
       new_label->jit_label = jit_forward ();
       new_label->forward = true;
-      vector_init (&label->patches);
     }
   else
     {
