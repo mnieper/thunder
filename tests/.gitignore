@@ -15,6 +15,7 @@
 /reader
 /runtime
 /stack
+/vector
 /symbol_table
 /write
 /unused-parameter.h

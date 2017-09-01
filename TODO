@@ -16,15 +16,17 @@
 
 * Library
 ** Add interface for handling Scheme objects to the library.
+** Extend reader and writer to understand R7RS.
 
 * Distribution
 ** Add missing files, in particular header files.
 
 * Development
-** Add pretty-printer to gdb for Scheme objects.
+** Add pretty-printer to gdb for Scheme objects.  (See libguile for an example.)
 
 * Instructions
 ** Allow to load dynamic libraries.
+** Use allocai in trampoline to provide scratch "registers" to jitted code.
 
 * Source
 ** Write and use a C-library for trampolines for recursive code.

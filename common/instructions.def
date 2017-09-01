@@ -23,14 +23,104 @@ EXPAND_INSTRUCTION (entry, special)
 EXPAND_INSTRUCTION (ret, special)
 
 EXPAND_INSTRUCTION (ellipsis, void)
-EXPAND_INSTRUCTION (finishi, fn)
 EXPAND_INSTRUCTION (prepare, void)
 EXPAND_INSTRUCTION (pushargi, im)
 EXPAND_INSTRUCTION (pushargr, ir)
 
+/* Binary ALU operations */
 EXPAND_INSTRUCTION (addi, ir_ir_im)
 EXPAND_INSTRUCTION (addr, ir_ir_ir)
-EXPAND_INSTRUCTION (movi, ir_im)
-EXPAND_INSTRUCTION (movr, ir_ir)
-EXPAND_INSTRUCTION (muli, ir_ir_im)
+EXPAND_INSTRUCTION (addxi, ir_ir_im)
+EXPAND_INSTRUCTION (addxr, ir_ir_ir)
+EXPAND_INSTRUCTION (addci, ir_ir_im)
+EXPAND_INSTRUCTION (addcr, ir_ir_ir)
+EXPAND_INSTRUCTION (subi, ir_ir_im)
+EXPAND_INSTRUCTION (subr, ir_ir_ir)
+EXPAND_INSTRUCTION (subxi, ir_ir_im)
+EXPAND_INSTRUCTION (subxr, ir_ir_ir)
+EXPAND_INSTRUCTION (subci, ir_ir_im)
+EXPAND_INSTRUCTION (subcr, ir_ir_ir)
+EXPAND_INSTRUCTION (rsbr, ir_ir_ir)
+EXPAND_INSTRUCTION (rsbi, ir_ir_im)
 EXPAND_INSTRUCTION (mulr, ir_ir_ir)
+EXPAND_INSTRUCTION (muli, ir_ir_im)
+EXPAND_INSTRUCTION (divr, ir_ir_ir)
+EXPAND_INSTRUCTION (divi, ir_ir_im)
+EXPAND_INSTRUCTION (remr, ir_ir_ir)
+EXPAND_INSTRUCTION (remi, ir_ir_im)
+EXPAND_INSTRUCTION (remr_u, ir_ir_ir)
+EXPAND_INSTRUCTION (remi_u, ir_ir_im)
+EXPAND_INSTRUCTION (andr, ir_ir_ir)
+EXPAND_INSTRUCTION (andi, ir_ir_im)
+EXPAND_INSTRUCTION (orr, ir_ir_ir)
+EXPAND_INSTRUCTION (ori, ir_ir_im)
+EXPAND_INSTRUCTION (xorr, ir_ir_ir)
+EXPAND_INSTRUCTION (xori, ir_ir_im)
+EXPAND_INSTRUCTION (lshr, ir_ir_ir)
+EXPAND_INSTRUCTION (lshi, ir_ir_im)
+EXPAND_INSTRUCTION (rshr, ir_ir_ir)
+EXPAND_INSTRUCTION (rshi, ir_ir_im)
+EXPAND_INSTRUCTION (rshr_u, ir_ir_ir)
+EXPAND_INSTRUCTION (rshi_u, ir_ir_im)
+
+/* Four operand binary ALU operations */
+EXPAND_INSTRUCTION (qmulr, ir_ir_ir_ir)
+EXPAND_INSTRUCTION (qmuli, ir_ir_ir_im)
+EXPAND_INSTRUCTION (qmulr_u, ir_ir_ir_ir)
+EXPAND_INSTRUCTION (qmuli_u, ir_ir_ir_im)
+EXPAND_INSTRUCTION (qdivr, ir_ir_ir_ir)
+EXPAND_INSTRUCTION (qdivi, ir_ir_ir_im)
+EXPAND_INSTRUCTION (qdivr_u, ir_ir_ir_ir)
+EXPAND_INSTRUCTION (qdivi_u, ir_ir_ir_im)
+
+/* Unary ALU operations */
+EXPAND_INSTRUCTION (negr, ir_ir)
+EXPAND_INSTRUCTION (comr, ir_ir)
+/* TODO(XXX): absr sqrtr */
+
+/* Compare instructions */
+EXPAND_INSTRUCTION (ltr, ir_ir_ir)
+EXPAND_INSTRUCTION (lti, ir_ir_im)
+EXPAND_INSTRUCTION (ltr_u, ir_ir_ir)
+EXPAND_INSTRUCTION (lti_u, ir_ir_im)
+EXPAND_INSTRUCTION (ler, ir_ir_ir)
+EXPAND_INSTRUCTION (lei, ir_ir_im)
+EXPAND_INSTRUCTION (ler_u, ir_ir_ir)
+EXPAND_INSTRUCTION (lei_u, ir_ir_im)
+EXPAND_INSTRUCTION (eqr, ir_ir_ir)
+EXPAND_INSTRUCTION (eqi, ir_ir_im)
+EXPAND_INSTRUCTION (ger, ir_ir_ir)
+EXPAND_INSTRUCTION (gei, ir_ir_im)
+EXPAND_INSTRUCTION (ger_u, ir_ir_ir)
+EXPAND_INSTRUCTION (gei_u, ir_ir_im)
+EXPAND_INSTRUCTION (gtr, ir_ir_ir)
+EXPAND_INSTRUCTION (gti, ir_ir_im)
+EXPAND_INSTRUCTION (gtr_u, ir_ir_ir)
+EXPAND_INSTRUCTION (gti_u, ir_ir_im)
+EXPAND_INSTRUCTION (ner, ir_ir_ir)
+EXPAND_INSTRUCTION (nei, ir_ir_im)
+/* TODO(XXX): unltr ... unordr */
+
+/* Transfer operations */
+EXPAND_INSTRUCTION (movi, ir_im) // FIXME 
+EXPAND_INSTRUCTION (movr, ir_ir)
+/* TODO(XXX): extr, truncr */
+
+/* Network extensions */
+
+/* Load operations */
+
+/* Store operations */
+
+/* Argument management */
+// Only prepare, pushargi, pushargr, retval, ret, ellipsis
+
+/* Branch instructions */
+
+/* Jump and return operations */
+EXPAND_INSTRUCTION (callr, ir)
+EXPAND_INSTRUCTION (calli, fn)
+EXPAND_INSTRUCTION (finishr, ir)
+EXPAND_INSTRUCTION (finishi, fn)
+EXPAND_INSTRUCTION (jmpr, ir)
+EXPAND_INSTRUCTION (jmpi, lb)

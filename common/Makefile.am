@@ -23,8 +23,8 @@ BUILT_SOURCES = reader.h scan.c
 noinst_LTLIBRARIES = libvmcommon.la
 libvmcommon_la_SOURCES = compiler.c deque.c dump.c gc.c init.c		\
 number.c load.c object.c object-stack.c resource.c runtime.c stack.c	\
-symbol_table.c version_etc_copyright.c write.c xaligned_alloc.c		\
-reader.y scan.l
+symbol_table.c version_etc_copyright.c vector.c write.c			\
+xaligned_alloc.c reader.y scan.l deque.h stack.h vector.h vmcommon.h
 libvmcommon_la_CPPFLAGS = -I$(top_builddir)/lib			\
 -I$(top_srcdir)/include -I$(top_srcdir)/lightning/include
 libvmcommon_la_LIBADD = $(LIBLTDL) $(LTLIBINTL) $(LTLIBICONV)		\

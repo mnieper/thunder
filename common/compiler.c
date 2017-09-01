@@ -30,7 +30,7 @@
 #include "error.h"
 #include "hash.h"
 #include "progname.h"
-#include "stack.h"
+#include "vector.h"
 #include "vmcommon.h"
 #include "xalloc.h"
 
@@ -39,10 +39,109 @@
 
 #define FRAME_SIZE 256  /* TODO: Calculate correct value. */
 
-typedef STACK(jit_node_t *) EntryPointStack;
+typedef VECTOR(jit_node_t *) EntryPointVector;
 
 static lt_dlhandle module;
 static jit_pointer_t *trampoline_return;
+
+
+/* Label table used by compiler */
+struct patch
+{
+};
+
+struct label
+{
+  /* TODO: Handle forward flag.  Maintain patch table. */
+  Object name;
+  jit_node_t *jit_label;
+  VECTOR(struct patch) patches;
+  bool forward;
+};
+
+typedef Hash_table LabelTable;
+
+static bool
+comparator (void const *entry1, void const *entry2)
+{
+  return ((struct label const *) entry1)->name
+    == ((struct label const *) entry2)->name;
+}
+
+static size_t
+hasher (void const *entry, size_t n)
+{
+  size_t val = rotr_sz ((size_t) ((struct label const *) entry)->name, 3);
+  return val % n;
+}
+
+static void
+freer (void *entry)
+{
+#define label ((struct label *) entry)
+  if (label->forward)
+    vector_destroy (&label->patches);
+#undef label
+  free (entry);
+}
+
+static LabelTable *
+label_table_create ()
+{
+  return hash_initialize (0, NULL, hasher, comparator, freer);
+}
+
+static void
+label_table_free (LabelTable *table)
+{
+  hash_free (table);
+}
+
+static struct label *
+label_table_insert (LabelTable *table, jit_state_t *_jit, Object name, bool forward)
+{
+  struct label *new_label = XMALLOC (struct label);
+  new_label->name = name;
+  struct label *label = hash_insert (table, new_label);
+  if (label == NULL)
+    xalloc_die ();
+  if (label != new_label)
+    {
+      free (new_label);
+
+      if (!label->forward && !forward)
+	error (EXIT_FAILURE, 0, "%s: %s", "duplicate label", object_get_str (name));
+
+      if (!forward)
+	{
+	  jit_link (label->jit_label);
+	  
+	  struct patch *patch;
+	  VECTOR_FOREACH (&label->patches, patch)
+	    {
+	      /* TODO(XXX) */
+	    }
+	  
+	  label->forward = false;
+	  vector_destroy (&label->patches);
+	}
+      return label;
+    }
+
+  if (forward)
+    {
+      new_label->jit_label = jit_forward ();
+      new_label->forward = true;
+      vector_init (&label->patches);
+    }
+  else
+    {
+      new_label->jit_label = jit_label ();
+      new_label->forward = false;
+    }
+  return new_label;
+}
+
 
 /* Instruction definitions */
 
@@ -57,14 +156,15 @@ assert_operand (Object operands)
 #define OPERAND_TYPE_ireg jit_gpr_t
 #define OPERAND_TYPE_imm jit_word_t
 #define OPERAND_TYPE_fun jit_pointer_t
+#define OPERAND_TYPE_label struct label *
 
-#define OPERAND(var, type)					\
-  assert_operand (operands);					\
-  OPERAND_TYPE(type) var = get_##type (data, car (operands));	\
+#define OPERAND(var, type)						\
+  assert_operand (operands);						\
+  OPERAND_TYPE(type) var = get_##type (_jit, labels, data, car (operands)); \
   operands = cdr (operands)
 
 static jit_gpr_t
-get_ireg (struct obstack *data, Object operand)
+get_ireg (jit_state_t *_jit, LabelTable *labels, struct obstack *data, Object operand)
 {
   if (operand == SYMBOL(R0))
     return JIT_R0;
@@ -82,7 +182,7 @@ get_ireg (struct obstack *data, Object operand)
 }
 
 static jit_word_t
-get_imm (struct obstack *data, Object operand)
+get_imm (jit_state_t *_jit, LabelTable *labels, struct obstack *data, Object operand)
 {
   if (is_symbol (operand))
     {
@@ -125,15 +225,25 @@ get_imm (struct obstack *data, Object operand)
 }
 
 static jit_pointer_t
-get_fun (struct obstack *data, Object operand)
+get_fun (jit_state_t *_jit, LabelTable *labels, struct obstack *data, Object operand)
 {
-  return (jit_pointer_t) get_imm (data, operand);
+  return (jit_pointer_t) get_imm (_jit, labels, data, operand);
+}
+
+static struct label *
+get_label (jit_state_t *_jit, LabelTable *labels, struct obstack *data, Object name)
+{
+  struct label *label;
+  
+  assert_symbol (name);
+  return label_table_insert (labels, _jit, name, true);
 }
 
 #define DEFINE_INSTRUCTION(name)			\
   static void						\
   instruction_##name (jit_state_t *_jit,		\
-		      EntryPointStack *entry_points,	\
+		      LabelTable *labels,		\
+		      EntryPointVector *entry_points,	\
 		      struct obstack *data,		\
 		      Object operands)
 
@@ -148,6 +258,14 @@ get_fun (struct obstack *data, Object operand)
   {						\
     OPERAND (fn, fun);				\
     jit_##name (fn);				\
+  }
+
+#define DEFINE_INSTRUCTION_lb(name)		\
+  DEFINE_INSTRUCTION(name)			\
+  {						\
+    OPERAND (label, label);			\
+    jit_node_t *jump = jit_##name ();		\
+    jit_patch_at (jump, label->jit_label);	\
   }
 
 #define DEFINE_INSTRUCTION_im(name)		\
@@ -198,11 +316,31 @@ get_fun (struct obstack *data, Object operand)
     jit_##name (r0, r1, r2);			\
   }
 
+#define DEFINE_INSTRUCTION_ir_ir_ir_im(name)	\
+  DEFINE_INSTRUCTION(name)			\
+  {						\
+    OPERAND (r0, ireg);				\
+    OPERAND (r1, ireg);				\
+    OPERAND (r2, ireg);				\
+    OPERAND (im, imm);				\
+    jit_##name (r0, r1, r2, im);		\
+  }
+
+#define DEFINE_INSTRUCTION_ir_ir_ir_ir(name)	\
+  DEFINE_INSTRUCTION(name)			\
+  {						\
+    OPERAND (r0, ireg);				\
+    OPERAND (r1, ireg);				\
+    OPERAND (r2, ireg);				\
+    OPERAND (r3, ireg);				\
+    jit_##name (r0, r1, r2, r3);		\
+  }
+
 DEFINE_INSTRUCTION (entry)
 {
   jit_node_t *label;
   label = jit_indirect ();
-  stack_push (entry_points, label);
+  vector_push (entry_points, label);
 }
 
 DEFINE_INSTRUCTION(ret)
@@ -232,8 +370,9 @@ typedef Hash_table InstructionTable;
 
 static InstructionTable *instruction_table;
 
-typedef void (*InstructionFunction) (jit_state_t *_jit,		
-				     EntryPointStack *entry_points,
+typedef void (*InstructionFunction) (jit_state_t *_jit,
+				     LabelTable *labels,
+				     EntryPointVector *entry_points,
 				     struct obstack *data,
 				     Object operands);
 
@@ -295,41 +434,6 @@ instruction_table_lookup (InstructionTable *table, Object name)
   return instr->function;
 }
 
-
-/* Label table used by compiler */
-struct label
-{
-  Object name;
-  jit_node_t *jit_label;
-};
-
-typedef Hash_table LabelTable;
-
-static bool
-comparator (void const *entry1, void const *entry2)
-{
-  return ((struct label const *) entry1)->name
-    == ((struct label const *) entry2)->name;
-}
-
-static size_t
-hasher (void const *entry, size_t n)
-{
-  size_t val = rotr_sz ((size_t) ((struct label const *) entry)->name, 3);
-  return val % n;
-}
-
-static LabelTable *
-label_table_create ()
-{
-  return hash_initialize (0, NULL, hasher, comparator, free);
-}
-
-static void
-label_table_free (LabelTable *table)
-{
-  hash_free (table);
-}
 
 int (*trampoline) (void *f, void *arg);
 
@@ -416,8 +520,8 @@ compile (Heap *heap, Object code)
 
   LabelTable *labels = label_table_create ();
 
-  EntryPointStack entry_points;
-  stack_init (&entry_points);
+  EntryPointVector entry_points;
+  vector_init (&entry_points);
   
   jit_prolog ();
   jit_tramp (FRAME_SIZE);
@@ -433,11 +537,12 @@ compile (Heap *heap, Object code)
 	  Object op = car (stmt);
 	  assert_symbol (op);
 	  InstructionFunction fun = instruction_table_lookup (instruction_table, op);
-	  fun (_jit, &entry_points, &assembly->data, cdr (stmt));
+	  fun (_jit, labels, &entry_points, &assembly->data, cdr (stmt));
 	}
       else
 	{
 	  assert_symbol (stmt);
+	  label_table_insert (labels, _jit, stmt, false);
 	}
 
       code = cdr (code);
@@ -445,12 +550,12 @@ compile (Heap *heap, Object code)
   jit_epilog ();
 
   jit_emit ();
-  assembly->entry_point_number = stack_size (&entry_points);
+  assembly->entry_point_number = vector_size (&entry_points);
   assembly->entry_points = XNMALLOC (assembly->entry_point_number, EntryPoint);
   {
     jit_node_t **label;
     EntryPoint *p = assembly->entry_points;
-    STACK_FOREACH (&entry_points, label)
+    VECTOR_FOREACH (&entry_points, label)
       {
 	*p = jit_address (*label);
 	++p;
@@ -460,7 +565,7 @@ compile (Heap *heap, Object code)
   jit_clear_state ();
 
   label_table_free (labels);
-  stack_destroy (&entry_points);
+  vector_destroy (&entry_points);
 
   assembly->clear = false;
 

@@ -33,7 +33,7 @@ TST_LOG_COMPILER = ./check.sh
 TESTS_ENVIRONMENT = @LOCALCHARSET_TESTS_ENVIRONMENT@
 
 check_PROGRAMS = compiler deque image number object symbol_table	\
-reader runtime stack write gc
+reader runtime stack vector write gc
 
 compiler_SOURCES = compiler.c macros.h
 
@@ -53,6 +53,8 @@ runtime_SOURCES = runtime.c macros.h
 
 stack_SOURCES = stack.c macros.h
 
+vector_SOURCES = vector.c macros.h
+
 write_SOURCES = write.c macros.h
 
 gc_SOURCES = gc.c macros.h
@@ -60,7 +62,8 @@ gc_SOURCES = gc.c macros.h
 check_SCRIPTS = test.sh check.sh
 
 grep_TEST = test.sh
-base_TESTS = hello.tst
+
+base_TESTS = hello.tst label.tst
 
 $(base_TESTS): check.sh
 
