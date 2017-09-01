@@ -116,6 +116,27 @@ EXPAND_INSTRUCTION (movr, ir_ir)
 // Only prepare, pushargi, pushargr, retval, ret, ellipsis
 
 /* Branch instructions */
+EXPAND_INSTRUCTION (bltr, lb_ir_ir)
+EXPAND_INSTRUCTION (blti, lb_ir_im)
+EXPAND_INSTRUCTION (bltr_u, lb_ir_ir)
+EXPAND_INSTRUCTION (blti_u, lb_ir_im)
+EXPAND_INSTRUCTION (bler, lb_ir_ir)
+EXPAND_INSTRUCTION (blei, lb_ir_im)
+EXPAND_INSTRUCTION (bler_u, lb_ir_ir)
+EXPAND_INSTRUCTION (blei_u, lb_ir_im)
+EXPAND_INSTRUCTION (beqr, lb_ir_ir)
+EXPAND_INSTRUCTION (beqi, lb_ir_im)
+EXPAND_INSTRUCTION (bger, lb_ir_ir)
+EXPAND_INSTRUCTION (bgei, lb_ir_im)
+EXPAND_INSTRUCTION (bger_u, lb_ir_ir)
+EXPAND_INSTRUCTION (bgei_u, lb_ir_im)
+EXPAND_INSTRUCTION (bgtr, lb_ir_ir)
+EXPAND_INSTRUCTION (bgti, lb_ir_im)
+EXPAND_INSTRUCTION (bgtr_u, lb_ir_ir)
+EXPAND_INSTRUCTION (bgti_u, lb_ir_im)
+EXPAND_INSTRUCTION (bner, lb_ir_ir)
+EXPAND_INSTRUCTION (bnei, lb_ir_im)
+
 
 /* Jump and return operations */
 EXPAND_INSTRUCTION (callr, ir)

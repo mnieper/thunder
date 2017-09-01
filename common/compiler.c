@@ -298,6 +298,26 @@ get_label (jit_state_t *_jit, LabelTable *labels, struct obstack *data, Object n
     jit_##name (r0, r1);				\
   }
 
+#define DEFINE_INSTRUCTION_lb_ir_im(name)		\
+  DEFINE_INSTRUCTION(name)				\
+  {							\
+    OPERAND (label, label);				\
+    OPERAND (r0, ireg);					\
+    OPERAND (im, imm);					\
+    jit_node_t *jump = jit_##name (r0, im);		\
+    jit_patch_at (jump, label->jit_label);		\
+  }
+
+#define DEFINE_INSTRUCTION_lb_ir_ir(name)	\
+  DEFINE_INSTRUCTION(name)			\
+  {						\
+    OPERAND (label, label);			\
+    OPERAND (r0, ireg);				\
+    OPERAND (r1, ireg);				\
+    jit_node_t *jump = jit_##name (r0, r1);	\
+    jit_patch_at (jump, label->jit_label);	\
+  }
+
 #define DEFINE_INSTRUCTION_ir_ir_im(name)	\
   DEFINE_INSTRUCTION(name)			\
   {						\
