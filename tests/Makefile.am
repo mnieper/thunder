@@ -63,7 +63,7 @@ check_SCRIPTS = test.sh check.sh
 
 grep_TEST = test.sh
 
-base_TESTS = hello.tst label.tst
+base_TESTS = hello.tst label.tst fact.tst float.tst ok.tst
 
 $(base_TESTS): check.sh
 

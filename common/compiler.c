@@ -59,6 +59,12 @@ struct label
   bool forward;
 };
 
+struct fun
+{
+  jit_word_t value;
+  struct label *label;
+};
+
 typedef Hash_table LabelTable;
 
 static bool
@@ -155,7 +161,7 @@ assert_operand (Object operands)
 #define OPERAND_TYPE(type) OPERAND_TYPE_##type
 #define OPERAND_TYPE_ireg jit_gpr_t
 #define OPERAND_TYPE_imm jit_word_t
-#define OPERAND_TYPE_fun jit_pointer_t
+#define OPERAND_TYPE_fun struct fun
 #define OPERAND_TYPE_label struct label *
 #define OPERAND_TYPE_freg jit_fpr_t
 #define OPERAND_TYPE_float float
@@ -202,8 +208,8 @@ get_freg (jit_state_t *_jit, LabelTable *labels, struct obstack *data, Object op
   error (EXIT_FAILURE, 0, "%s: %s", "not a floating-point register", object_get_str (operand));
 }
 
-static jit_word_t
-get_imm (jit_state_t *_jit, LabelTable *labels, struct obstack *data, Object operand)
+static struct fun
+get_fun (jit_state_t *_jit, LabelTable *labels, struct obstack *data, Object operand)
 {
   if (is_symbol (operand))
     {
@@ -220,10 +226,10 @@ get_imm (jit_state_t *_jit, LabelTable *labels, struct obstack *data, Object ope
 	  }
 	  break;
 	default:
-	  error (EXIT_FAILURE, 0, "%s: %s", "not an immediate value", object_get_str (operand));
+	  return (struct fun) { .label = label_table_insert (labels, _jit, operand, true) };
 	}
       free (s);
-      return value;
+      return (struct fun) { .value = value, .label = NULL };
     }
 
   if (is_string (operand))
@@ -231,18 +237,27 @@ get_imm (jit_state_t *_jit, LabelTable *labels, struct obstack *data, Object ope
       char *s = string_value (operand);
       jit_word_t value = (jit_word_t) obstack_copy0 (data, s, strlen (s));
       free (s);
-      return value;
+      return (struct fun) { .value = value, .label = NULL };
     }
 
   if (is_char (operand))
     {
-      return char_value (operand);
+      return (struct fun) { .value = char_value (operand), .label = NULL };
     }
   
   /* TODO: Check for an integer. */
   if (!is_exact_number (operand))
     error (EXIT_FAILURE, 0, "%s: %s", "not an exact number", object_get_str (operand));
-  return fixnum (operand);
+  return (struct fun) { .value = fixnum (operand), .label = NULL };
+}
+
+static jit_word_t
+get_imm (jit_state_t *_jit, LabelTable *labels, struct obstack *data, Object operand)
+{
+  struct fun fun = get_fun (_jit, labels, data, operand);
+  if (fun.label != NULL)
+    error (EXIT_FAILURE, 0, "%s: %s", "not an immediate value", object_get_str (operand));
+  return fun.value;
 }
 
 static float
@@ -265,19 +280,13 @@ get_double (jit_state_t *_jit, LabelTable *labels, struct obstack *data, Object 
   return flonum_d (operand);
 }
 
-static jit_pointer_t
-get_fun (jit_state_t *_jit, LabelTable *labels, struct obstack *data, Object operand)
-{
-  return (jit_pointer_t) get_imm (_jit, labels, data, operand);
-}
-
 static struct label *
 get_label (jit_state_t *_jit, LabelTable *labels, struct obstack *data, Object name)
 {
-  struct label *label;
-  
-  assert_symbol (name);
-  return label_table_insert (labels, _jit, name, true);
+  struct fun fun = get_fun (_jit, labels, data, name);
+  if (fun.label == NULL)
+    error (EXIT_FAILURE, 0, "%s: %s", "not a label", object_get_str (name));
+  return fun.label;
 }
 
 #define DEFINE_INSTRUCTION(name)			\
@@ -294,11 +303,17 @@ get_label (jit_state_t *_jit, LabelTable *labels, struct obstack *data, Object n
     jit_##name ();				\
   }
 
-#define DEFINE_INSTRUCTION_fn(name)		\
-  DEFINE_INSTRUCTION(name)			\
-  {						\
-    OPERAND (fn, fun);				\
-    jit_##name (fn);				\
+#define DEFINE_INSTRUCTION_fn(name)			\
+  DEFINE_INSTRUCTION(name)				\
+  {							\
+    OPERAND (fn, fun);					\
+    if (fn.label == NULL)				\
+      jit_##name ((jit_pointer_t) fn.value);		\
+    else						\
+      {							\
+        jit_node_t *addr = jit_##name (NULL);		\
+        jit_patch_at (addr, fn.label->jit_label);	\
+      }							\
   }
 
 #define DEFINE_INSTRUCTION_lb(name)		\
@@ -358,6 +373,20 @@ get_label (jit_state_t *_jit, LabelTable *labels, struct obstack *data, Object n
     OPERAND (r0, ireg);				\
     OPERAND (r1, ireg);				\
     jit_##name (r0, r1);			\
+  }
+
+#define DEFINE_INSTRUCTION_ir_fn(name)			\
+  DEFINE_INSTRUCTION(name)				\
+  {							\
+    OPERAND (r0, ireg);					\
+    OPERAND (fn, fun);					\
+    if (fn.label == NULL)				\
+      jit_##name (r0, fn.value);			\
+    else						\
+      {							\
+        jit_node_t *addr = jit_##name (r0, 0);		\
+        jit_patch_at (addr, fn.label->jit_label);	\
+      }							\
   }
 
 #define DEFINE_INSTRUCTION_fr_fm(name)		\

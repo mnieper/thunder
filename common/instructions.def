@@ -108,7 +108,7 @@ EXPAND_INSTRUCTION (nei, ir_ir_im)
 /* TODO(XXX): unltr ... unordr */
 
 /* Transfer operations */
-EXPAND_INSTRUCTION (movi, ir_im) // FIXME 
+EXPAND_INSTRUCTION (movi, ir_fn)
 EXPAND_INSTRUCTION (movr, ir_ir)
 EXPAND_INSTRUCTION (movi_f, fr_fm) 
 EXPAND_INSTRUCTION (movr_f, fr_fr)

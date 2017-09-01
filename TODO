@@ -2,7 +2,6 @@
 ** Distribute libltdl with Thunder.
 
 * Thunder executable
-** Ignore shebang when reading initial file.
 
 * Assembler
 ** Emulate R3 and V3.
@@ -27,6 +26,9 @@
 * Instructions
 ** Allow to load dynamic libraries.
 ** Use allocai in trampoline to provide scratch "registers" to jitted code.
+
+* Virtual machine
+** Add native threads.
 
 * Source
 ** Write and use a C-library for trampolines for recursive code.
