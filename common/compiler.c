@@ -157,6 +157,9 @@ assert_operand (Object operands)
 #define OPERAND_TYPE_imm jit_word_t
 #define OPERAND_TYPE_fun jit_pointer_t
 #define OPERAND_TYPE_label struct label *
+#define OPERAND_TYPE_freg jit_fpr_t
+#define OPERAND_TYPE_float float
+#define OPERAND_TYPE_double double
 
 #define OPERAND(var, type)						\
   assert_operand (operands);						\
@@ -179,6 +182,24 @@ get_ireg (jit_state_t *_jit, LabelTable *labels, struct obstack *data, Object op
   if (operand == SYMBOL(V2))
     return JIT_V2;
   error (EXIT_FAILURE, 0, "%s: %s", "not an integer register", object_get_str (operand));
+}
+
+static jit_fpr_t
+get_freg (jit_state_t *_jit, LabelTable *labels, struct obstack *data, Object operand)
+{
+  if (operand == SYMBOL(F0))
+    return JIT_F0;
+  if (operand == SYMBOL(F1))
+    return JIT_F1;
+  if (operand == SYMBOL(F2))
+    return JIT_F2;
+  if (operand == SYMBOL(F3))
+    return JIT_F3;
+  if (operand == SYMBOL(F4))
+    return JIT_F4;
+  if (operand == SYMBOL(F5))
+    return JIT_F5;
+  error (EXIT_FAILURE, 0, "%s: %s", "not a floating-point register", object_get_str (operand));
 }
 
 static jit_word_t
@@ -222,6 +243,26 @@ get_imm (jit_state_t *_jit, LabelTable *labels, struct obstack *data, Object ope
   if (!is_exact_number (operand))
     error (EXIT_FAILURE, 0, "%s: %s", "not an exact number", object_get_str (operand));
   return fixnum (operand);
+}
+
+static float
+get_float (jit_state_t *_jit, LabelTable *labels, struct obstack *data, Object operand)
+{
+  /* TODO: Check for a real number. */
+  if (!is_inexact_number (operand))
+    error (EXIT_FAILURE, 0, "%s: %s", "not an inexact number", object_get_str (operand));
+  
+  return flonum_flt (operand);
+}
+
+static float
+get_double (jit_state_t *_jit, LabelTable *labels, struct obstack *data, Object operand)
+{
+  /* TODO: Check for a real number. */
+  if (!is_inexact_number (operand))
+    error (EXIT_FAILURE, 0, "%s: %s", "not an inexact number", object_get_str (operand));
+  
+  return flonum_d (operand);
 }
 
 static jit_pointer_t
@@ -275,6 +316,20 @@ get_label (jit_state_t *_jit, LabelTable *labels, struct obstack *data, Object n
     jit_##name (im);				\
   }
 
+#define DEFINE_INSTRUCTION_fm(name)		\
+  DEFINE_INSTRUCTION(name)			\
+  {						\
+    OPERAND (im, float);				\
+    jit_##name (im);				\
+  }
+
+#define DEFINE_INSTRUCTION_dm(name)		\
+  DEFINE_INSTRUCTION(name)			\
+  {						\
+    OPERAND (im, double);			\
+    jit_##name (im);				\
+  }
+
 #define DEFINE_INSTRUCTION_ir(name)		\
   DEFINE_INSTRUCTION(name)			\
   {						\
@@ -282,12 +337,19 @@ get_label (jit_state_t *_jit, LabelTable *labels, struct obstack *data, Object n
     jit_##name (ir);				\
   }
 
+#define DEFINE_INSTRUCTION_fr(name)		\
+  DEFINE_INSTRUCTION(name)			\
+  {						\
+    OPERAND (r0, freg);				\
+    jit_##name (r0);				\
+  }
+
 #define DEFINE_INSTRUCTION_ir_im(name)		\
   DEFINE_INSTRUCTION(name)			\
   {						\
     OPERAND (r0, ireg);				\
     OPERAND (im, imm);				\
-    jit_##name (r0, im);				\
+    jit_##name (r0, im);			\
   }
 
 #define DEFINE_INSTRUCTION_ir_ir(name)		\
@@ -295,7 +357,31 @@ get_label (jit_state_t *_jit, LabelTable *labels, struct obstack *data, Object n
   {						\
     OPERAND (r0, ireg);				\
     OPERAND (r1, ireg);				\
-    jit_##name (r0, r1);				\
+    jit_##name (r0, r1);			\
+  }
+
+#define DEFINE_INSTRUCTION_fr_fm(name)		\
+  DEFINE_INSTRUCTION(name)			\
+  {						\
+    OPERAND (r0, freg);				\
+    OPERAND (im, float);				\
+    jit_##name (r0, im);			\
+  }
+
+#define DEFINE_INSTRUCTION_fr_dm(name)		\
+  DEFINE_INSTRUCTION(name)			\
+  {						\
+    OPERAND (r0, freg);				\
+    OPERAND (im, double);			\
+    jit_##name (r0, im);			\
+  }
+
+#define DEFINE_INSTRUCTION_fr_fr(name)		\
+  DEFINE_INSTRUCTION(name)			\
+  {						\
+    OPERAND (r0, freg);				\
+    OPERAND (r1, freg);				\
+    jit_##name (r0, r1);			\
   }
 
 #define DEFINE_INSTRUCTION_lb_ir_im(name)		\
@@ -333,6 +419,24 @@ get_label (jit_state_t *_jit, LabelTable *labels, struct obstack *data, Object n
     OPERAND (r0, ireg);				\
     OPERAND (r1, ireg);				\
     OPERAND (r2, ireg);				\
+    jit_##name (r0, r1, r2);			\
+  }
+
+#define DEFINE_INSTRUCTION_fr_fr_fm(name)	\
+  DEFINE_INSTRUCTION(name)			\
+  {						\
+    OPERAND (r0, freg);				\
+    OPERAND (r1, freg);				\
+    OPERAND (im, float);			\
+    jit_##name (r0, r1, im);			\
+  }
+
+#define DEFINE_INSTRUCTION_fr_fr_fr(name)	\
+  DEFINE_INSTRUCTION(name)			\
+  {						\
+    OPERAND (r0, freg);				\
+    OPERAND (r1, freg);				\
+    OPERAND (r2, freg);				\
     jit_##name (r0, r1, r2);			\
   }
 

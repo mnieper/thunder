@@ -26,10 +26,16 @@ EXPAND_INSTRUCTION (ellipsis, void)
 EXPAND_INSTRUCTION (prepare, void)
 EXPAND_INSTRUCTION (pushargi, im)
 EXPAND_INSTRUCTION (pushargr, ir)
+EXPAND_INSTRUCTION (pushargi_f, fm)
+EXPAND_INSTRUCTION (pushargr_f, fr)
+EXPAND_INSTRUCTION (pushargi_d, dm)
+EXPAND_INSTRUCTION (pushargr_d, fr)
 
 /* Binary ALU operations */
 EXPAND_INSTRUCTION (addi, ir_ir_im)
 EXPAND_INSTRUCTION (addr, ir_ir_ir)
+EXPAND_INSTRUCTION (addi_f, fr_fr_fm)
+EXPAND_INSTRUCTION (addr_f, fr_fr_fr)
 EXPAND_INSTRUCTION (addxi, ir_ir_im)
 EXPAND_INSTRUCTION (addxr, ir_ir_ir)
 EXPAND_INSTRUCTION (addci, ir_ir_im)
@@ -104,6 +110,14 @@ EXPAND_INSTRUCTION (nei, ir_ir_im)
 /* Transfer operations */
 EXPAND_INSTRUCTION (movi, ir_im) // FIXME 
 EXPAND_INSTRUCTION (movr, ir_ir)
+EXPAND_INSTRUCTION (movi_f, fr_fm) 
+EXPAND_INSTRUCTION (movr_f, fr_fr)
+EXPAND_INSTRUCTION (movi_d, fr_dm) 
+EXPAND_INSTRUCTION (movr_d, fr_fr)
+
+EXPAND_INSTRUCTION (extr_f_d, fr_fr)
+EXPAND_INSTRUCTION (extr_d_f, fr_fr)
+
 /* TODO(XXX): extr, truncr */
 
 /* Network extensions */

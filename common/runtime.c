@@ -60,10 +60,33 @@ exact_number (Heap *heap, long int n, unsigned long int d)
   return res;
 }
 
+Object
+inexact_number (Heap *heap, double real, double imag)
+{
+  mpc_t z;
+  mpc_init2 (z, 53);
+  mpc_set_d (z, real, imag);
+  Object res = make_inexact_number (heap, z);
+  mpc_clear (z);
+  return res;
+}
+
 int
 fixnum (Object number)
 {
   return mpz_get_si (mpq_numref (*exact_number_value (number))); 
+}
+
+float
+flonum_flt (Object number)
+{
+  return mpfr_get_flt (mpc_realref (*inexact_number_value (number)), MPFR_RNDN);
+}
+
+double
+flonum_d (Object number)
+{
+  return mpfr_get_d (mpc_realref (*inexact_number_value (number)), MPFR_RNDN);
 }
 
 Object

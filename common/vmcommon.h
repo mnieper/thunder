@@ -526,8 +526,17 @@ length (Object list);
 Object
 exact_number (Heap *heap, long int n, unsigned long int d);
 
+Object
+inexact_number (Heap *heap, double real, double imag);
+
 int
 fixnum (Object number);
+
+float
+flonum_flt (Object number);
+
+double
+flonum_d (Object number);
 
 void
 assert_list (Object obj);

@@ -54,6 +54,9 @@ main (int argc, char *argv)
   ASSERT (fixnum (p) == -4);
 
   ASSERT (length (list (&heap, make_char ('a'), make_char ('b'))) == 2);
+
+  p = inexact_number (&heap, 4.0, 0.0);
+  ASSERT (flonum_d (p) == 4.0);
   
   heap_destroy (&heap);
 }
