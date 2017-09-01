@@ -305,10 +305,10 @@ IDENTIFIER           {INITIAL}{SUBSEQUENT}*|{PECULIAR-IDENTIFIER}
 
   (?i:"#e")          CHECK (set_exactness_prefix (yyscanner, true));
   (?i:"#i")          CHECK (set_exactness_prefix (yyscanner, false));
-  (?i:"#b")          CHECK (set_radix_prefix (yyscanner, 2)); BEGIN (BINARY);
-  (?i:"#o")          CHECK (set_radix_prefix (yyscanner, 8));  BEGIN (OCTAL);
-  (?i:"#d")          CHECK (set_radix_prefix (yyscanner, 10)); BEGIN (DECIMAL);
-  (?i:"#x")          CHECK (set_radix_prefix (yyscanner, 16)); BEGIN (HEXADECIMAL);
+  (?i:"#b")          CHECK (set_radix_prefix (yyscanner, 2)); yy_push_state (BINARY, yyscanner);
+  (?i:"#o")          CHECK (set_radix_prefix (yyscanner, 8));  yy_push_state (OCTAL, yyscanner);
+  (?i:"#d")          CHECK (set_radix_prefix (yyscanner, 10)); yy_push_state (DECIMAL, yyscanner);
+  (?i:"#x")          CHECK (set_radix_prefix (yyscanner, 16)); yy_push_state (HEXADECIMAL, yyscanner);
 }
 
 <INITIAL,DECIMAL>{
@@ -503,7 +503,8 @@ set_radix_prefix (yyscan_t restrict scanner, int radix)
   YY_EXTRA_TYPE context = yyget_extra (scanner);
   if (context->radix_prefix || context->real_found)
     return false;
-  context->radix = radix;
+  context->radix_prefix = true;
+  context->in_number = true;
   return true;
 }
 

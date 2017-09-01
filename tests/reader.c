@@ -73,6 +73,7 @@ is_quote (Object obj)
   return obj == SYMBOL(QUOTE);
 }
 
+// XXX
 #include "reader.h"
 
 int main (int argc, char *argv[])
@@ -82,7 +83,7 @@ int main (int argc, char *argv[])
   setlocale (LC_ALL, "");
 
   heap_init (&heap, 1ULL << 20);
-
+  
   ASSERT (check_datum (u8"#f", is_boolean));
   ASSERT (check_datum (u8"#\\space", is_char));
   ASSERT (check_datum (u8"#\\ö", is_char));
@@ -93,6 +94,8 @@ int main (int argc, char *argv[])
   ASSERT (check_datum (u8"(1 . 2)", is_pair));
   ASSERT (check_datum (u8"'x", is_pair));
   ASSERT (check_datum (u8"125", is_exact_number));
+
+  ASSERT (check_datum (u8"(#x42)", is_pair));
   ASSERT (check_datum (u8"1.1", is_inexact_number));
   ASSERT (check_datum (u8"#i1/2", is_inexact_number));
   ASSERT (check_datum (u8".3", is_inexact_number));
