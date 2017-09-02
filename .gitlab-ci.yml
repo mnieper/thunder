@@ -10,4 +10,5 @@ before_script:
 
 check:
   script:
-    - make check
+    - make check || (cat tests/*.log && false)
+
