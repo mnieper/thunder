@@ -15,3 +15,10 @@ check:
     paths:
     - tests/*.log
     expire_in: 1 week
+
+html:
+  script:
+    - make html
+  artifacts:
+    paths:
+    - doc/thunder.html
