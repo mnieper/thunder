@@ -1,7 +1,11 @@
 (closure
  (code
   `((entry)
+    (movi %r0 "ok")
     (jmpi label)
-    (addi %r0 %r1 10)
+    (movi %r0 "fail")
     label
+    (prepare)
+    (pushargr %r0)
+    (finishi &puts)
     (ret))))

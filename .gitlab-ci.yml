@@ -10,5 +10,8 @@ before_script:
 
 check:
   script:
-    - make check || (cat tests/*.log && false)
-
+    - make check
+  artifacts:
+    paths:
+    - tests/*.log
+    expire_in: 1 week

@@ -19,7 +19,7 @@
 # TODO(XXX): Add dependency on .ok files.
 
 
-THUNDER = $(top_srcdir)/src/thunder
+THUNDER = $(top_builddir)/src/thunder
 
 AM_CPPFLAGS = -I$(top_srcdir)/include -I$(top_builddir)/lib	\
 -I$(top_srcdir)/common -I$(top_srcdir)/lightning/include
@@ -63,19 +63,19 @@ check_SCRIPTS = test.sh check.sh
 
 grep_TEST = test.sh
 
-base_TESTS = hello.tst label.tst fact.tst float.tst ok.tst
+base_TESTS = hello.tst label.tst fact.tst float.tst
 
 $(base_TESTS): check.sh
 
 TESTS = $(check_PROGRAMS) $(grep_TEST) $(base_TESTS)
 
 test.sh: Makefile.am
-	echo "$(LIBTOOL) --mode=execute $(VALGRIND) ../src/thunder --version | grep \"Thunder\"" > $@
+	echo "$(LIBTOOL) --mode=execute $(VALGRIND) $(THUNDER) --version | grep \"Thunder\"" > $@
 	chmod a+x $@
 
 check.sh: Makefile.am
 	echo "#! /bin/sh" > $@
-	echo "$(THUNDER) \"\$$1\" 2>&1 | grep -q \"\`cat \$$(basename \"\$$1\" .tst).ok\`\"" > $@
+	echo "$(LIBTOOL) --mode=execute $(VALGRIND) $(THUNDER) \"\$$1\" 2>&1 | grep -q \"\`cat \$$(basename \"\$$1\" .tst).ok\`\"" > $@
 	chmod a+x $@
 
 EXTRA_DIST = $(base_TESTS) $(base_TESTS:.tst=.ok)
