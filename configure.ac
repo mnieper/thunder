@@ -62,6 +62,15 @@ AC_CHECK_HEADERS([stdlib.h ltdl.h])
 # Checks for library functions.
 AC_SEARCH_LIBS([lt_dlopen], [ltdl])
 
+AM_CONDITIONAL([BUILD_FROM_GIT], [test -d "$srcdir/.git"])
+AM_CONDITIONAL([GIT_CROSS_COMPILING],
+               [test -d "$srcdir/.git" && test $cross_compiling = yes])
+AS_IF([test $cross_compiling = no], [
+  AM_MISSING_PROG([HELP2MAN], [help2man])
+], [
+  HELP2MAN=:
+])
+
 AC_CONFIG_FILES([Makefile
                  lib/Makefile
 		 common/Makefile

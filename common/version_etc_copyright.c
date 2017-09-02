@@ -22,4 +22,4 @@
 # include <config.h>
 #endif
 
-const char version_etc_copyright[] = "Copyright %s %d Marc Nieper-Wißkirchen";
+const char version_etc_copyright[] = "Copyright %s %d Marc Nieper-Wisskirchen";

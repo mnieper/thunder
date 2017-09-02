@@ -30,6 +30,7 @@
 ** Use allocai in trampoline to provide scratch "registers" to jitted code.
 
 * Virtual machine
+** ifdef existence of V3 and R3; emulate otherwise by using the stack.
 ** Count allocated space in the object-stack.  Force overflowing of alloc stack to trigger GC at the next safe point.
 ** Add native threads.
 

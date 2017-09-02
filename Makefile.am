@@ -20,4 +20,23 @@ ACLOCAL_AMFLAGS = -I m4
 
 SUBDIRS = lightning lib common include libvm src doc tests 
 
-EXTRA_DIST = m4/gnulib-cache.m4
+EXTRA_DIST = \
+	README-dev \
+	thunder.x \
+	m4/gnulib-cache.m4
+
+CLEANFILES =
+
+if !GIT_CROSS_COMPILING
+man_MANS = thunder.1
+EXTRA_DIST += $(man_MANS)
+endif
+
+if BUILD_FROM_GIT
+thunder.1: src/thunder
+	$(HELP2MAN) --include=$(top_srcdir)/man/thunder.x $(top_builddir)/src/thunder -o $@-t
+	chmod a=r $@-t
+	mv -f $@-t $@
+
+CLEANFILES += $(man_MANS)
+endif

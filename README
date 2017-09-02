@@ -1,5 +1,8 @@
 This is the README file for the Thunder distribution.
-Thunder is an implementation of a virtual machine.
+
+Thunder is a virtual machine based on GNU lightning.  The virtual
+machine is intended to be used as a compilation target of dynamic
+programming languages like Scheme and JavaScript.
 
   Copyright (C) 2017 Marc Nieper-Wißkirchen
 
@@ -11,7 +14,7 @@ See the files ./INSTALL* for building and installation instructions.
 
 Primary distribution point: https://nieper.gitlab.io/thunder
 
-Home page: https://gitlab.com/nieper/thunder
+Home page: https://nieper.gitlab.io/thunder
 
 Developer page: https://gitlab.com/nieper/thunder
 - please file bug reports, patches and feature requests here if

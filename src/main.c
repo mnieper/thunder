@@ -131,5 +131,5 @@ static void
 print_version (void)
 {
   version_etc (stdout, NULL, PACKAGE_NAME, VERSION,
-	       "Marc Nieper-Wißkirchen", NULL);
+	       "Marc Nieper-Wisskirchen", NULL);
 }

@@ -10,7 +10,7 @@
 
 @copying
 This manual is for Thunder (version @value{VERSION}, @value{UPDATED}),
-a virtual machine.
+a virtual machine based on GNU lightning.
 
 Copyright @copyright{} 2017 Marc Nieper-Wi@ss{} kirchen
 
@@ -50,7 +50,10 @@ a virtual machine.
 
 @menu
 * Overview::		General purpose and information.
+* Specification::       Specification of the virtual machine.                
 * The instruction set:: The instruction set used in Thunder.
+* Library::             Using Thunder in other programs.
+* Internals::           Documentation of the internals of the Thunder virtual machine.
 * Reporting bugs::	Sending bug reports and feature suggestions.
 * GNU Free Documentation License:: Copying and sharing this documentation.
 * Concept index::	Index of concepts.
@@ -66,9 +69,28 @@ The @command{thunder} program (@url{https://gitlab.com/nieper/thunder})
 is a virtual machine for Scheme-like languages.
 
 
-@node The instruction set
-@chapter The instruction set
+@node Specification
+@chapter Specification of the virtual machine
 
+This chapter is not yet written.
+
+
+@node The instruction set
+@chapter The instruction set used in Thunder
+
+This chapter is not yet written.
+
+
+@node Library
+@chapter Using Thunder in other programs
+
+This chapter is not yet written.
+
+
+@node Internals
+@chapter Documentation of the internals of the Thunder virtual machine
+
+This chapter is not yet written.
 
 
 @node Reporting bugs

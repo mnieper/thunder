@@ -2,7 +2,7 @@ image: ubuntu:latest
 
 before_script:
   - apt-get -y update
-  - apt-get -y install autoconf bison build-essential flex git gperf libtool texinfo libgmp-dev libmpfr-dev libmpc-dev valgrind
+  - apt-get -y install autoconf bison build-essential flex git gperf help2man libtool texinfo libgmp-dev libmpfr-dev libmpc-dev valgrind
   - git submodule sync --recursive
   - git submodule update --init --recursive
   - ./bootstrap
