@@ -1,3 +1,11 @@
+cache:
+  paths:
+  - apt-cache/
+
+before_script:
+  - apt-get -y update
+  - apt-get -y install unzip
+
 pages:
   script:
   - mkdir .public
