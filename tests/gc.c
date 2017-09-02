@@ -35,6 +35,8 @@ main (int argc, char *argv)
   Heap heap;
   heap_init (&heap, 1ULL << 24);
 
+  Object r[4];
+  
   Object s = SYMBOL(QUOTE);
   
   Object p = cons (&heap,
@@ -44,22 +46,28 @@ main (int argc, char *argv)
 			 cons (&heap,
 			       make_char ('c'),
 			       make_char ('d'))));
-  
-  collect (&heap, 1ULL << 20, (Object *[2]) {&s, &p}, 2);
 
+  r[0] = s; r[1] = p;
+  collect (&heap, r, 2);
+  s = r[0]; p = r[1];
+  
   Object q = cons (&heap,
 		   make_char ('e'),
 		   p);
-  
-  collect (&heap, 1ULL << 20, (Object *[2]) {&s, &q}, 2);
 
+  r[0] = s; r[1] = q;
+  collect (&heap, r, 2);
+  s = r[0]; q = r[1];
+  
   ASSERT (is_pair (q));
 
   Object sym1 = make_symbol (&heap, u8"sym1", strlen (u8"sym1"));
   Object sym2 = make_symbol (&heap, u8"sym2", strlen (u8"sym2"));
   Object sym3 = make_symbol (&heap, u8"sym1", strlen (u8"sym1"));
-  
-  collect (&heap, 1ULL << 20, (Object *[4]) {&sym1, &sym2, &sym3, &s}, 4);
+
+  r[0] = sym1; r[1] = sym2; r[2] = sym3; r[3] = s;
+  collect (&heap, r, 4);
+  sym1 = r[0]; sym2 = r[1]; sym3 = r[2]; s = r[3];
 
   ASSERT (sym1 != sym2);
   ASSERT (sym1 == sym3);
@@ -70,12 +78,14 @@ main (int argc, char *argv)
   mpq_t num;
   mpq_init (num);
   p = make_exact_number (&heap, num);
-  collect (&heap, 1ULL << 20, (Object *[1]) {&p}, 1);
+  r[0] = p;
+  collect (&heap, r, 1);
+  p = r[0];
   mpq_set_si (num, 2, 1);
   q = make_exact_number (&heap, num);
-  mpq_t *r;
-  r = exact_number_value (p);
-  ASSERT (mpq_cmp_si (*r, 0, 1) == 0);  
+  mpq_t *z;
+  z = exact_number_value (p);
+  ASSERT (mpq_cmp_si (*z, 0, 1) == 0);  
   mpq_clear (num);
 
   heap_destroy (&heap);

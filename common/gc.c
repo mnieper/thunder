@@ -20,6 +20,7 @@
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif
+#include <stddef.h>
 #include <string.h>
 
 #include "vmcommon.h"
@@ -73,6 +74,8 @@ void
 heap_init (Heap *heap, size_t heap_size)
 {
   heap->heap_size = heap_size;
+  /* TODO(XXX): Do not hardcode value.  Value depends on the size of the local heap. */
+  heap->nursery_size = 1ULL << 20;
   heap->mutation_table = mutation_table_create ();
   symbol_table_init (&heap->symbol_table);
   resource_manager_init (&heap->resource_manager);
@@ -184,9 +187,10 @@ scan (Heap *heap, Pointer ref)
 }
 
 void
-collect (Heap *restrict heap, size_t nursery_size, Object *roots[], size_t root_num)
+collect (Heap *restrict heap, Object roots[], size_t root_count)
 {
-  Pointer old_start = (free_space (heap) < nursery_size / WORDSIZE) ? flip (heap) : NULL;
+  /* FIXME(XXX): We have to add the obstack space to the nursery_size. */
+  Pointer old_start = (free_space (heap) < heap->nursery_size / WORDSIZE) ? flip (heap) : NULL;
   Pointer ref = heap->start;
   
   resource_manager_begin_gc (&heap->resource_manager, old_start != NULL);
@@ -199,10 +203,10 @@ collect (Heap *restrict heap, size_t nursery_size, Object *roots[], size_t root_
   
   for (size_t i = 0; i < SYMBOL_COUNT; ++i)
     process (heap, &symbols[i]);
-  
-  for (size_t i = 0; i < root_num; ++i)
-    process (heap, roots[i]);
 
+  for (size_t i = 0; i < root_count; ++i)
+    process (heap, &roots [i]);
+  
   for (; ref < heap->free; ref += object_size (ref))
     scan (heap, ref);
   

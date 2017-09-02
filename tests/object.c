@@ -22,6 +22,7 @@
 #if HAVE_CONFIG_H
 # include <config.h>
 #endif
+#include <libthunder.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <string.h>
@@ -37,8 +38,9 @@ main (int argc, char *argv)
 {
   init ();
 
-  Heap heap;
-  heap_init (&heap, 1ULL << 20);
+  Vm *vm = vm_create ();
+  Heap *heap = &vm->heap;
+  
   Object p;
 
   p = make_null ();
@@ -56,18 +58,18 @@ main (int argc, char *argv)
   ASSERT (is_boolean (p));
   ASSERT (!boolean_value (p));
 
-  p = cons (&heap, make_null (), make_null ());
+  p = cons (heap, make_null (), make_null ());
   ASSERT (is_pair (p));
   ASSERT (is_null (car (p)));
   ASSERT (is_null (cdr (p)));  
 
-  p = make_symbol (&heap, u8"symbol", strlen (u8"symbol"));
+  p = make_symbol (heap, u8"symbol", strlen (u8"symbol"));
   ASSERT (is_symbol (p));
   ASSERT (symbol_length (p) == strlen (u8"symbol"));
   ASSERT (memcmp (symbol_bytes (p), u8"symbol", strlen (u8"symbol")) == 0);
   ASSERT (is_symbol (SYMBOL(QUOTE)));
   
-  p = make_string (&heap, 2, 64);
+  p = make_string (heap, 2, 64);
   ASSERT (is_string (p));
   string_set (p, 0, 65);
   ASSERT (is_string (p));
@@ -75,37 +77,37 @@ main (int argc, char *argv)
   ASSERT (string_ref (p, 1) == 64);
   ASSERT (string_length (p) == 2);
   
-  p = make_vector (&heap, 3, make_char ('a'));
+  p = make_vector (heap, 3, make_char ('a'));
   ASSERT (is_vector (p));
-  vector_set (&heap, p, 0, make_null ());
+  vector_set (heap, p, 0, make_null ());
   ASSERT (is_vector (p));
   ASSERT (is_null (vector_ref (p, 0)));
   ASSERT (is_char (vector_ref (p, 1)));
   ASSERT (is_char (vector_ref (p, 2)));
   ASSERT (vector_length (p) == 3);
 
-  Object proc = make_procedure (&heap, list (&heap,
-					     list (&heap, INSTRUCTION(entry)),
-					     list (&heap,
+  Object proc = make_procedure (heap, list (heap,
+					     list (heap, INSTRUCTION(entry)),
+					     list (heap,
 						   INSTRUCTION(movi),
 						   SYMBOL(R0),
-						   exact_number (&heap, 42, 1)),
-					     list (&heap, INSTRUCTION(ret))));
+						   exact_number (heap, 42, 1)),
+					     list (heap, INSTRUCTION(ret))));
   ASSERT (is_procedure (proc));
   ASSERT (assembly_entry_point_number (procedure_assembly (proc)) == 1);
 
-  Object closure = make_closure (&heap, proc, 1, make_char ('a'));
+  Object closure = make_closure (heap, proc, 1, make_char ('a'));
   ASSERT (closure_procedure (closure) == proc);
   ASSERT (closure_ref (closure, 0) == make_char ('a'));
-  closure_set (&heap, closure, 0, make_char ('b'));
+  closure_set (heap, closure, 0, make_char ('b'));
   ASSERT (closure_ref (closure, 0) == make_char ('b'));
-  ASSERT (closure_call (closure, 0) == 42);
+  ASSERT (closure_call (vm, closure, 0) == 42);
   ASSERT (closure_length (closure) == 1);
   
   mpq_t r;
   mpq_t *q;
   mpq_init (r);
-  p = make_exact_number (&heap, r);
+  p = make_exact_number (heap, r);
   ASSERT (is_exact_number (p));
   q = exact_number_value (p);
   ASSERT (mpq_cmp_si (*q, 0, 1) == 0);
@@ -115,11 +117,11 @@ main (int argc, char *argv)
   mpc_t *y;
   mpc_init2 (x, 53);
   mpc_set_ui (x, 1, MPC_RNDNN);
-  p = make_inexact_number (&heap, x);
+  p = make_inexact_number (heap, x);
   ASSERT (is_inexact_number (p));
   y = inexact_number_value (p);
   ASSERT (mpc_cmp_si (*y, 1) == 0);
   mpc_clear (x);
       
-  heap_destroy (&heap);
+  vm_free (vm);
 }

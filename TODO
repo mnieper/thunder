@@ -9,10 +9,11 @@
 
 * Garbage collector
 ** Implement ephemerons.
+** Think of a keep are in the nursery for very young objects.
 
 * Documentation
 ** Automatically create dist as CI artifact, and mention in README.
-** Setup GitLab pages; create dist in pages.
+** Setup GitLab pages; create dist in pages.  Create manual in pages.
 
 * Library
 ** Add interface for handling Scheme objects to the library.
@@ -29,6 +30,7 @@
 ** Use allocai in trampoline to provide scratch "registers" to jitted code.
 
 * Virtual machine
+** Count allocated space in the object-stack.  Force overflowing of alloc stack to trigger GC at the next safe point.
 ** Add native threads.
 
 * Source

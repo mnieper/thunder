@@ -20,6 +20,7 @@
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif
+#include <libthunder.h>
 #include <lightning.h>
 #include <ltdl.h>
 #include <stdbool.h>
@@ -46,7 +47,6 @@ static jit_pointer_t *trampoline_return;
 
 struct label
 {
-  /* TODO: Handle forward flag.  Maintain patch table. */
   Object name;
   jit_node_t *jit_label;
   bool forward;
@@ -123,6 +123,34 @@ label_table_insert (LabelTable *table, jit_state_t *_jit, Object name, bool forw
 }
 
 
+/* Trampoline stack */
+struct stack_layout {
+  Vm *vm;
+  jit_pointer_t heap_base;
+  jit_pointer_t heap_end;
+  jit_word_t live_values[6];
+};
+
+static jit_int32_t stack_base;
+
+#define stack_store(member, reg)					\
+  _Generic(((struct stack_layout) {}).member,				\
+	   Vm *: jit_stxi (stack_base + offsetof (struct stack_layout, member), \
+			   JIT_FP, reg),				\
+	   jit_pointer_t: jit_stxi (stack_base + offsetof (struct stack_layout, member), \
+				    JIT_FP, reg),			\
+	   unsigned short: jit_stxi_s (stack_base + offsetof (struct stack_layout, member), \
+				       JIT_FP, reg))
+
+#define stack_load(reg, member)						\
+  _Generic(((struct stack_layout) {}).member,				\
+	   Vm *: jit_ldxi (reg, JIT_FP,					\
+			   stack_base + offsetof (struct stack_layout, member)), \
+	   jit_pointer_t: jit_ldxi (reg, JIT_FP,			\
+				    stack_base + offsetof (struct stack_layout, member)), \
+	   unsigned short: jit_ldxi_us (reg, JIT_FP,\
+					stack_base + offsetof (struct stack_layout, member)))
+
 /* Instruction definitions */
 
 static void
@@ -140,11 +168,18 @@ assert_operand (Object operands)
 #define OPERAND_TYPE_freg jit_fpr_t
 #define OPERAND_TYPE_float float
 #define OPERAND_TYPE_double double
+#define OPERAND_TYPE_obj Object
 
 #define OPERAND(var, type)						\
   assert_operand (operands);						\
   OPERAND_TYPE(type) var = get_##type (_jit, labels, data, car (operands)); \
   operands = cdr (operands)
+
+static Object
+get_obj (jit_state_t *_jit, LabelTable *labels, struct obstack *data, Object operand)
+{
+  return operand;
+}
 
 static jit_gpr_t
 get_ireg (jit_state_t *_jit, LabelTable *labels, struct obstack *data, Object operand)
@@ -197,6 +232,19 @@ get_fun (jit_state_t *_jit, LabelTable *labels, struct obstack *data, Object ope
 	    if (address == NULL)
 	      error (EXIT_FAILURE, 0, "%s", lt_dlerror ());
 	    value = (jit_word_t) address;
+	  }
+	  break;
+	case '$':
+	  {
+	    /* TODO(XXX): Maintain a constant table for quick lookup. */
+	    if (strcmp (s + 1, "true") == 0)
+	      value = make_boolean (true);
+	    else if (strcmp (s + 1, "false") == 0)
+	      value = make_boolean (false);
+	    else if (strcmp (s + 1, "null") == 0)
+	      value = make_null ();
+	    else
+	      error (EXIT_FAILURE, 0, "%s: %s", "unknown constant", s);
 	  }
 	  break;
 	default:
@@ -464,6 +512,10 @@ get_label (jit_state_t *_jit, LabelTable *labels, struct obstack *data, Object n
     jit_##name (r0, r1, r2, r3);		\
   }
 
+
+/* Special instructions */
+#define DEFINE_INSTRUCTION_special(name)
+
 DEFINE_INSTRUCTION (entry)
 {
   jit_node_t *label;
@@ -478,7 +530,125 @@ DEFINE_INSTRUCTION(ret)
   jit_patch_abs (jump, trampoline_return);
 }
 
-#define DEFINE_INSTRUCTION_special(name)
+/* TODO(XXX): Reduce code size by using calli/ret. */
+DEFINE_INSTRUCTION(alloc)
+{
+  /* FIXME(XXX): R3, V3 may not be available. */
+  OPERAND (words, imm);
+  size_t const bytes = words * WORDSIZE;
+  jit_extr_us (JIT_R3, JIT_V3);
+  jit_node_t *ok = jit_forward ();
+  jit_node_t *jump1 = jit_blei_u (JIT_R3, 0x10000 - bytes);
+  jit_patch_at (jump1, ok);
+  stack_load (JIT_R3, heap_end);
+  jit_subi (JIT_R3, JIT_R3, bytes);
+  jit_node_t *jump2 = jit_bler_u (JIT_V3, JIT_R3);
+  jit_patch_at (jump2, ok);
+
+  /* We have to do a garbage collection. */
+  jit_prepare ();
+  stack_load (JIT_R3, vm);
+  jit_addi (JIT_R3, JIT_R3, offsetof (struct vm, heap));
+  jit_pushargr (JIT_R3);
+  Object regs = operands;
+  int i = 0;
+  for (int i = 0; !is_null (operands); ++i)
+    {
+      OPERAND (r0, ireg);      
+      jit_stxi (stack_base + offsetof (struct stack_layout, live_values)
+		+ i * sizeof (jit_word_t), JIT_FP, r0);
+    }
+  jit_addi (JIT_R3, JIT_FP, stack_base + offsetof (struct stack_layout, live_values));
+  jit_pushargr (JIT_R3);
+  jit_pushargi (i);
+  jit_finishi (collect);
+  operands = regs;
+  for (int i = 0; !is_null (operands); ++i)
+    {
+      OPERAND (r0, ireg);      
+      jit_ldxi (r0, JIT_FP, stack_base + offsetof (struct stack_layout, live_values)
+		+ i * sizeof (jit_word_t));
+    }
+
+  /* Reset free pointer. */
+  stack_load (JIT_V3, heap_base);
+
+  /* Everything done. */
+  jit_link (ok);
+}
+
+DEFINE_INSTRUCTION(mov)
+{
+  OPERAND (target, ireg);
+  OPERAND (expr, obj);
+  assert_not_null (expr);
+  assert_list (expr);
+  Object op = car (expr);
+  operands = cdr (expr);
+  if (op == SYMBOL(CONS))
+    {
+      OPERAND (r0, ireg);
+      OPERAND (r1, ireg);
+      jit_str (JIT_V3, r0);
+      jit_stxi (WORDSIZE, JIT_V3, r1);
+      jit_movr (target, JIT_V3);
+      jit_addi (JIT_V3, JIT_V3, 2 * WORDSIZE);
+    }
+  else if (op == SYMBOL(CAR))
+    {
+      OPERAND (r0, ireg);
+      jit_ldr (target, r0);
+    }
+  else if (op == SYMBOL(CDR))
+    {
+      OPERAND (r0, ireg);
+      jit_ldxi (target, r0, WORDSIZE);
+    }
+  else
+    error (EXIT_FAILURE, 0, "%s: %s", "unknown operator", object_get_str (expr));  
+}
+
+DEFINE_INSTRUCTION(b)
+{
+  // (b lb (pair? ))
+  
+  OPERAND(lb, label);
+  OPERAND (expr, obj);
+  assert_not_null (expr);
+  assert_list (expr);
+  Object op = car (expr);
+  operands = cdr (expr);
+  if (op == SYMBOL (PAIRP))
+    {
+      OPERAND (r0, ireg);
+      jit_node_t *jump = jit_bmci (r0, OBJECT_TYPE_MASK);
+      jit_patch_at (jump, lb->jit_label);
+    }
+  else if (op == SYMBOL (BOOLEANP))
+    {
+      OPERAND (r0, ireg);
+      jit_movr (JIT_R3, r0);
+      jit_andi (JIT_R3, JIT_R3, IMMEDIATE_TYPE_MASK);
+      jit_node_t *jump = jit_beqi (JIT_R3, BOOLEAN_TYPE);
+      jit_patch_at (jump, lb->jit_label);
+    }
+  else if (op == SYMBOL (VECTORP))
+    {
+      OPERAND (r0, ireg);
+      jit_movr (JIT_R3, r0);
+      jit_andi (JIT_R3, JIT_R3, OBJECT_TYPE_MASK);
+      jit_node_t *no_vector = jit_forward ();
+      jit_node_t *jump1 = jit_bnei (JIT_R3, POINTER_TYPE);
+      jit_patch_at (jump1, no_vector);
+      jit_ldxi (JIT_R3, JIT_R3, -WORDSIZE);
+      jit_andi (JIT_R3, JIT_R3, HEADER_TYPE_MASK);
+      jit_node_t *jump2 = jit_beqi (JIT_R3, VECTOR_TYPE);
+      jit_patch_at (jump2, lb->jit_label);
+      jit_link (no_vector);
+    }
+  else
+    error (EXIT_FAILURE, 0, "%s: %s", "unknown predicate", object_get_str (expr));
+}
 
 #define EXPAND_INSTRUCTION(name, type)		\
   DEFINE_INSTRUCTION_##type (name)
@@ -561,17 +731,15 @@ instruction_table_lookup (InstructionTable *table, Object name)
     error (EXIT_FAILURE, 0, "%s: %s", "unknown instruction", object_get_str (name));
   return instr->function;
 }
-
-
-int (*trampoline) (void *f, void *arg);
+ 
+int (*trampoline) (Vm *vm, void *f, void *heap, void *arg);
 
 static jit_state_t *_jit;
 
 void
 init_compiler (void)
 {
-  jit_node_t *f;
-  jit_node_t *arg;
+  jit_node_t *vm, *f, *heap, *arg;
   jit_node_t *done;
   
   jit_set_memory_functions (xmalloc, xrealloc, free);
@@ -579,9 +747,18 @@ init_compiler (void)
 
   _jit = jit_new_state ();
   jit_prolog ();
+  stack_base = jit_allocai (sizeof (struct stack_layout));
   jit_frame (FRAME_SIZE);
+  vm = jit_arg ();
   f = jit_arg ();
+  heap = jit_arg ();
   arg = jit_arg ();
+  jit_getarg (JIT_R0, vm);
+  stack_store (vm, JIT_R0);  
+  jit_getarg (JIT_V3, heap);
+  stack_store (heap_base, JIT_V3);
+  jit_addi (JIT_R0, JIT_V3, 1ULL << 20); /* FIXME(XXX): Do not hardcode heap size. */
+  stack_store (heap_end, JIT_R0);
   jit_getarg (JIT_R1, f);
   jit_getarg (JIT_R0, arg);
   jit_jmpr (JIT_R1);
@@ -589,7 +766,10 @@ init_compiler (void)
   jit_retr (JIT_R0);
   jit_epilog ();
   trampoline = jit_emit();
-  trampoline_return = jit_address (done);  
+  trampoline_return = jit_address (done);
+
+  //XXX jit_disassemble ();
+  
   jit_clear_state ();
 
   instruction_table = instruction_table_create ();
@@ -719,10 +899,4 @@ EntryPoint *
 assembly_entry_points (Object assembly)
 {
   return (*((Assembly *) assembly)) [0].entry_points;
-}
-
-int
-call (Object assembly, size_t entry, void *data)
-{  
-  return trampoline ((*((Assembly *) assembly)) [0].entry_points [entry], data);
 }

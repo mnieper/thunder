@@ -558,10 +558,18 @@ is_closure (Object obj)
     && (((Pointer) obj)[-1] & HEADER_TYPE_MASK) == CLOSURE_TYPE;
 }
 
+/* TODO(XXX): Rename to closure_eval (?). */
+/* TODO: Evaluating may trigger a GC.  Need a mechanism to preserve variables. */
 int
-closure_call (Object closure, size_t entry_point)
+closure_call (Vm *vm, Object closure, size_t entry_point)
 {
-  return trampoline ((EntryPoint) ((Pointer) closure) [2 + 2 * entry_point], (Pointer) closure);
+  void *heap_area = xaligned_alloc (0x10000, 1ULL << 20);  /* TODO(XXX): Make adaptable. */
+  int res = trampoline (vm,
+			(EntryPoint) ((Pointer) closure) [2 + 2 * entry_point],
+			heap_area,
+			(Pointer) closure);
+  free (heap_area);
+  return res;
 }
 
 

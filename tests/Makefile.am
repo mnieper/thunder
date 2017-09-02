@@ -25,7 +25,7 @@ AM_CPPFLAGS = -I$(top_srcdir)/include -I$(top_builddir)/lib	\
 -I$(top_srcdir)/common -I$(top_srcdir)/lightning/include
 AM_LDFLAGS = -dlopen self
 
-LDADD = $(top_srcdir)/common/libvmcommon.la
+LDADD = $(top_builddir)/common/libvmcommon.la $(top_builddir)/libvm/libthunder.la
 
 TEST_EXTENSIONS = .tst
 LOG_COMPILER = $(LIBTOOL) --mode=execute $(VALGRIND) --suppressions=$(top_builddir)/lib/malloca.valgrind

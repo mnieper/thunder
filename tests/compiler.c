@@ -71,8 +71,5 @@ main (int argc, char *argv)
   Object obj = compile (&heap, code);
   ASSERT (is_assembly (obj));
 
-  // XXX
-  call (obj, 0, NULL);
-
   heap_destroy (&heap);  
 }

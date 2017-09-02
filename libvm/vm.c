@@ -26,11 +26,6 @@
 #include "vmcommon.h"
 #include "xalloc.h"
 
-struct vm
-{
-  Heap heap;
-};
-
 void
 vm_init (void)
 {
@@ -40,7 +35,6 @@ vm_init (void)
 Vm *
 vm_create (void)
 {
-  
   Vm *vm = XMALLOC (struct vm);
   heap_init (&vm->heap, 1ULL << 30);
   return vm;
@@ -61,5 +55,5 @@ vm_load (Vm *vm, FILE *src, char const *filename)
   if (!is_closure (obj))
     error_at_line (EXIT_FAILURE, 0, filename, 1, "not a thunder image");
 
-  return closure_call (obj, 0);
+  return closure_call (vm, obj, 0);
 }

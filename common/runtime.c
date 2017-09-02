@@ -126,6 +126,13 @@ assert_list (Object obj)
 }
 
 void
+assert_not_null (Object obj)
+{
+  if (is_null (obj))
+    error (EXIT_FAILURE, 0, "%s: %s", "unexpected empty list", object_get_str (obj));
+}
+
+void
 assert_symbol (Object obj)
 {
   if (!is_symbol (obj))

@@ -19,18 +19,6 @@
 
 
 
-EXPAND_INSTRUCTION (entry, special)
-EXPAND_INSTRUCTION (ret, special)
-
-EXPAND_INSTRUCTION (ellipsis, void)
-EXPAND_INSTRUCTION (prepare, void)
-EXPAND_INSTRUCTION (pushargi, im)
-EXPAND_INSTRUCTION (pushargr, ir)
-EXPAND_INSTRUCTION (pushargi_f, fm)
-EXPAND_INSTRUCTION (pushargr_f, fr)
-EXPAND_INSTRUCTION (pushargi_d, dm)
-EXPAND_INSTRUCTION (pushargr_d, fr)
-
 /* Binary ALU operations */
 EXPAND_INSTRUCTION (addi, ir_ir_im)
 EXPAND_INSTRUCTION (addr, ir_ir_ir)
@@ -127,7 +115,15 @@ EXPAND_INSTRUCTION (extr_d_f, fr_fr)
 /* Store operations */
 
 /* Argument management */
-// Only prepare, pushargi, pushargr, retval, ret, ellipsis
+EXPAND_INSTRUCTION (ellipsis, void)
+EXPAND_INSTRUCTION (prepare, void)
+EXPAND_INSTRUCTION (pushargi, im)
+EXPAND_INSTRUCTION (pushargr, ir)
+EXPAND_INSTRUCTION (pushargi_f, fm)
+EXPAND_INSTRUCTION (pushargr_f, fr)
+EXPAND_INSTRUCTION (pushargi_d, dm)
+EXPAND_INSTRUCTION (pushargr_d, fr)
+
 
 /* Branch instructions */
 EXPAND_INSTRUCTION (bltr, lb_ir_ir)
@@ -159,3 +155,17 @@ EXPAND_INSTRUCTION (finishr, ir)
 EXPAND_INSTRUCTION (finishi, fn)
 EXPAND_INSTRUCTION (jmpr, ir)
 EXPAND_INSTRUCTION (jmpi, lb)
+
+
+/* Special instructions */
+EXPAND_INSTRUCTION (entry, special)
+EXPAND_INSTRUCTION (ret, special)
+EXPAND_INSTRUCTION (alloc, special)
+
+
+/* Scheme objects */
+EXPAND_INSTRUCTION (mov, special)
+EXPAND_INSTRUCTION (b, special)
+
+// b ; e.g. (b LABEL (pair? x))
+// (mov a (cons ... ...))

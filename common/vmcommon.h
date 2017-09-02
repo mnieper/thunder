@@ -21,6 +21,7 @@
 #define VM_COMMON_H_INCLUDED
 
 #include <gmp.h>
+#include <libthunder.h>
 #include <lightning.h>
 #include <mpfr.h>
 #include <mpc.h>
@@ -281,6 +282,7 @@ struct heap
   Pointer start;
   Pointer free;
   size_t heap_size;
+  size_t nursery_size;
   MutationTable *mutation_table;
   SymbolTable symbol_table;
   ResourceManager resource_manager;
@@ -293,10 +295,18 @@ heap_init (Heap *heap, size_t heap_size);
 void
 heap_destroy (Heap *heap);
 
+
+/* Virtual machine */
+struct vm
+{
+  Heap heap;
+};
+
+
 /* Garbage collector */
 
 void
-collect (Heap *heap, size_t nursery_size, Object *roots[], size_t root_num);
+collect (Heap *heap, Object roots[], size_t root_count);
 
 void
 mutate (Heap *heap, Pointer field, Object value);
@@ -308,37 +318,6 @@ dump (Object obj, FILE *out);
 
 Object
 load (Heap *heap, FILE *out, char const *filename);
-
-/* Compiler */
-
-void
-init_compiler (void);
-
-void
-finish_compiler (void);
-
-void
-assembly_init (Assembly assembly);
-
-void
-assembly_destroy (Assembly assembly);
-
-Object
-compile (Heap *heap, Object code);
-
-bool
-is_assembly (Object obj);
-
-size_t
-assembly_entry_point_number (Object assembly);
-
-EntryPoint *
-assembly_entry_points (Object assembly);
-
-int
-call (Object assembly, size_t entry, void *data);
-
-extern int (*trampoline) (void *f, void *arg);
 
 /* Scheme objects */
 
@@ -514,7 +493,7 @@ Object
 closure_set (Heap *heap, Object closure, size_t index, Object val);
 
 int
-closure_call (Object closure, size_t entry_point);
+closure_call (Vm *vm, Object closure, size_t entry_point);
 
 /* Runtime */
 bool
@@ -540,6 +519,9 @@ flonum_d (Object number);
 
 void
 assert_list (Object obj);
+
+void
+assert_not_null (Object obj);
 
 void
 assert_symbol (Object obj);
@@ -616,6 +598,34 @@ object_get_str (Object obj);
 /* Initialization */
 void
 init (void);
+
+/* Compiler */
+
+void
+init_compiler (void);
+
+void
+finish_compiler (void);
+
+void
+assembly_init (Assembly assembly);
+
+void
+assembly_destroy (Assembly assembly);
+
+Object
+compile (Heap *heap, Object code);
+
+bool
+is_assembly (Object obj);
+
+size_t
+assembly_entry_point_number (Object assembly);
+
+EntryPoint *
+assembly_entry_points (Object assembly);
+
+extern int (*trampoline) (Vm *vm, void *f, void *heap, void *arg);
 
 /* Initial symbols */
 
