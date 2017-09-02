@@ -3,6 +3,8 @@ pages:
   - mkdir .public
   - cp -r * .public
   - mv .public public
+  - wget -O html.zip https://gitlab.com/nieper/thunder/-/jobs/artifacts/nieper/download?job=html
+  - unzip -j html.zip "doc/thunder.html/*.html" -d public/manual/html_node 
   artifacts:
     paths:
     - public
