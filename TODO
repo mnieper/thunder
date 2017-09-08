@@ -20,6 +20,7 @@
 ** Extend reader and writer to understand R7RS.
 
 * Distribution
+** Remove references to the LGPL.
 ** Add missing files, in particular header files.
 
 * Development
