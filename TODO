@@ -36,7 +36,7 @@
 
 * Source
 ** Write and use a C-library for trampolines for recursive code.
-
+** Use externally_visible so that -fwhole-program and -flto can be used.
 
 Local Variables:
 mode: outline

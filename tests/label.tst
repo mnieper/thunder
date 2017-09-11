@@ -2,6 +2,7 @@
  (code
   `((entry)
     (movi %r0 "ok")
+    (mulr %v0 %v1 %v2)
     (jmpi label)
     (movi %r0 "fail")
     label

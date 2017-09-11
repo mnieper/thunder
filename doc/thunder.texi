@@ -45,11 +45,11 @@ Texts.  A copy of the license is included in the section entitled
 @top Thunder
 
 This manual is for Thunder (version @value{VERSION}, @value{UPDATED}),
-a virtual machine.
+a virtual machine based on GNU lightning.
 @end ifnottex
 
 @menu
-* Overview::		General purpose and information.
+* Overview::		Introduction to Thunder.
 * Specification::       Specification of the virtual machine.                
 * The instruction set:: The instruction set used in Thunder.
 * Library::             Using Thunder in other programs.
@@ -61,12 +61,21 @@ a virtual machine.
 
 
 @node Overview
-@chapter Overview
+@chapter Introduction to Thunder
 
 @cindex overview
 
-The @command{thunder} program (@url{https://gitlab.com/nieper/thunder})
-is a virtual machine for Scheme-like languages.
+Thunder is a virtual machine based on GNU lightning.  The virtual machine
+is intended to be used as a compilation target of dynamic programming
+languages like Scheme and JavaScript.
+
+The @command{thunder} program (@url{https://nieper.gitlab.io/thunder})
+loads a Thunder image file, and executes the contained code.  During
+execution, code can be dynamically added.  At any time while the code is
+executed, the current state can be dumped as a new image file.  Loading
+that file at a later date resumes code execution.
+
+The image file is the external representation of a datum of IEEE Scheme.
 
 
 @node Specification
