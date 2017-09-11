@@ -759,11 +759,11 @@ init_compiler (void)
   stack_store (heap_base, JIT_V3);
   jit_addi (JIT_R0, JIT_V3, 1ULL << 20); /* FIXME(XXX): Do not hardcode heap size. */
   stack_store (heap_end, JIT_R0);
-  jit_getarg (JIT_R1, f);
-  jit_getarg (JIT_R0, arg);
-  jit_jmpr (JIT_R1);
+  jit_getarg (JIT_R0, f);
+  jit_getarg (JIT_V0, arg);
+  jit_jmpr (JIT_R0);
   done = jit_indirect ();
-  jit_retr (JIT_R0);
+  jit_retr (JIT_V0);
   jit_epilog ();
   trampoline = jit_emit();
   trampoline_return = jit_address (done);

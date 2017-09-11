@@ -90,7 +90,7 @@ main (int argc, char *argv)
 					     list (heap, INSTRUCTION(entry)),
 					     list (heap,
 						   INSTRUCTION(movi),
-						   SYMBOL(R0),
+						   SYMBOL(V0),
 						   exact_number (heap, 42, 1)),
 					     list (heap, INSTRUCTION(ret))));
   ASSERT (is_procedure (proc));
