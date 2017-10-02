@@ -36,7 +36,7 @@ static Heap heap;
 Object
 read_string (uint8_t *b)
 {
-  char *s = u8_strconv_to_encoding (b, locale_charset (), iconveh_question_mark); 
+  char *s = u8_strconv_to_encoding (b, locale_charset (), iconveh_question_mark);
   FILE *in = fmemopen (s, strlen (s), "r");
 
   Reader reader;
@@ -44,7 +44,7 @@ read_string (uint8_t *b)
 
   Object obj;
   assert (reader_read (&reader, &obj, NULL, NULL));
-  
+
   reader_destroy (&reader);
 
   fclose (in);
@@ -57,19 +57,21 @@ int
 main (int argc, char *argv)
 {
   init ();
-  
+
   heap_init (&heap, 1ULL << 16);
-  
+
   Object code = read_string
-    ("((entry)\n"
-     " (prepare)\n"
-     " (pushargi \"Hello, World!\n\")\n"
-     " (ellipsis)"
-     " (finishi &printf)"
-     " (ret))\n");
+    ("(entry\n"
+     " (add %0 1 1)\n"
+     " (beq label2 %0 1)\n"
+     " label1\n"
+     " (add %1 %0 %0)\n"
+     " (beq label1 1 2)\n"
+     " label2\n"
+     " (ret 0))\n");
 
   Object obj = compile (&heap, code);
   ASSERT (is_assembly (obj));
 
-  heap_destroy (&heap);  
+  heap_destroy (&heap);
 }

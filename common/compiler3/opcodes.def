@@ -1,0 +1,43 @@
+/*
+ * Copyright (C) 2017  Marc Nieper-Wißkirchen
+ *
+ * This file is part of Thunder.
+ *
+ * Thunder is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation; either version 3, or (at
+ * your option) any later version.
+ *
+ * Thunder is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+ * or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
+ * License for more details.
+ *
+ * Authors:
+ *      Marc Nieper-Wißkirchen
+ */
+
+
+/* XXX
+ * Types of instructions: Hängt nur davon ab, welche Parameter es gibt.
+ * Wollen wir vielleicht anders haben.
+ *
+ * ALU: www
+ * QMUL: qwww
+ * NEG/COM: ww
+ * LDR: ww
+ * LDI: wp
+ * LDXI: www
+ * ST: pw
+ * BRANCH: pww
+ * jmpr: w
+ * jmpi: p
+ * Dann noch f für Float
+ * handle branches!
+ */
+
+
+EXPAND_OPCODE(add, www)
+EXPAND_OPCODE(beq, pww)
+EXPAND_OPCODE(jmp, p)
+EXPAND_OPCODE(ret, ret)

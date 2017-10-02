@@ -26,6 +26,7 @@ AC_CONFIG_MACRO_DIR([m4])
 
 AM_INIT_AUTOMAKE([
   gnits
+  subdir-objects
   1.14.1
 ])
 
@@ -41,7 +42,7 @@ gl_EARLY
 #  AC_CHECK_TOOLS([AR], [gcc-ar ar], [:])
 #  AC_CHECK_TOOLS([NM], [gcc-nm nm], [:])
 #  AC_CHECK_TOOLS([RANLIB], [gcc-ranlib ranlib], [:])
-#  AM_CFLAGS="$(AM_CFLAGS) -flto"
+#  AM_CFLAGS="$(AM_CFLAGS) -flto -fuse-linker-plugin"
 #])
 AM_PROG_AR
 LT_PREREQ([2.4.2])

@@ -1,0 +1,22 @@
+/*
+ * Copyright (C) 2017  Marc Nieper-Wißkirchen
+ *
+ * This file is part of Thunder.
+ *
+ * Thunder is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation; either version 3, or (at
+ * your option) any later version.
+ *
+ * Thunder is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+ * or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
+ * License for more details.
+ *
+ * Authors:
+ *      Marc Nieper-Wißkirchen
+ */
+
+ENTRY (EXACT_NUMBER, mpq_t, mpq_init, mpq_clear)
+ENTRY (INEXACT_NUMBER, mpc_t, complex_init, mpc_clear)
+ENTRY (ASSEMBLY, Assembly, assembly_init, assembly_destroy)

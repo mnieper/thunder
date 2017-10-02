@@ -32,7 +32,7 @@ main (int argc, char *argv)
 
   STACK(int) s;
   stack_init (&s);
-  
+
   ASSERT (stack_is_empty (&s));
 
   stack_push (&s, 1);
@@ -52,10 +52,10 @@ main (int argc, char *argv)
   STACK_FOREACH (&s, j)
     n += *j;
   ASSERT (n == 4950);
-  
+
   for (int i = 99; i >= 0; i--)
     ASSERT (stack_pop (&s) == i);
   ASSERT (stack_is_empty (&s));
-  
+
   stack_destroy (&s);
 }

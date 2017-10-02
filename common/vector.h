@@ -17,60 +17,96 @@
  *      Marc Nieper-Wißkirchen
  */
 
-#ifndef VECTOR_H_INCLUDED
-#define VECTOR_H_INCLUDED
+#ifndef VECTOR2_H_INCLUDED
+#define VECTOR2_H_INCLUDED
 
-#include <stddef.h>
+#include "obstack.h"
 
-#include "xalloc.h"
+#ifndef obstack_chunk_alloc
+# include "xalloc.h"
+# define obstack_chunk_alloc xmalloc
+#endif
+#ifndef obstack_chunk_free
+# include "stdlib.h"
+# define obstack_chunk_free free
+#endif
 
-#define VECTOR(type)				\
-  struct					\
-  {						\
-    type *base;					\
-    ptrdiff_t items;				\
-    size_t size;				\
+#define DEFINE_VECTOR(Vector, Element, vector)		\
+  typedef struct vector Vector;				\
+  struct vector						\
+  {							\
+    struct obstack obstack;				\
+  };							\
+							\
+  static inline void					\
+  vector##_init (Vector *v)				\
+  {							\
+    obstack_init (&v->obstack);				\
+  }							\
+							\
+  static inline void					\
+  vector##_destroy (Vector *v)				\
+  {							\
+    obstack_finish (&v->obstack);			\
+    obstack_free (&v->obstack, NULL);			\
+  }							\
+							\
+  static inline void					\
+  vector##_clear (Vector *v)				\
+  {							\
+    void *p = obstack_finish (&v->obstack);		\
+    obstack_free (&v->obstack, p);			\
+  }							\
+							\
+  static inline Element *				\
+  vector##_begin (Vector *v)				\
+  {							\
+   return obstack_base (&v->obstack);			\
+  }							\
+							\
+  static inline Element *				\
+  vector##_end (Vector *v)				\
+  {							\
+    return obstack_next_free (&v->obstack);		\
+  }							\
+							\
+  static inline bool					\
+  vector##_empty (Vector *v)				\
+  {							\
+    return vector##_begin (v) == vector##_end (v);	\
+  }							\
+							\
+  static inline size_t					\
+  vector##_size (Vector *v)				\
+  {							\
+    return (obstack_object_size (&v->obstack))		\
+      / sizeof (Element);				\
+  }							\
+  							\
+  static inline void					\
+  vector##_push (Vector *v, Element *e)			\
+  {							\
+    obstack_grow (&v->obstack, e, sizeof (Element));	\
+  }							\
+  							\
+  static inline Element *					\
+  vector##_top (Vector *v)					\
+  {								\
+    return vector##_end (v) - 1;				\
+  }								\
+  								\
+  static inline Element	*					\
+  vector##_pop (Vector *v)					\
+  {								\
+    if (vector##_empty (v))					\
+      return NULL;						\
+    obstack_blank_fast (&v->obstack, -(int) sizeof (Element));	\
+    return vector##_end (v);					\
   }
 
-#define vector_init(vector)					\
-  do								\
-    {								\
-      (vector)->size = 16;					\
-      (vector)->base = xnmalloc (16, sizeof (*(vector)->base));	\
-      (vector)->items = 0;					\
-    }								\
-  while (0)
+#define vector_foreach(e, Vector, Element, vector, v)			\
+  for (Element *(e) = vector##_begin ((v));				\
+       (e) != vector##_end ((v));					\
+       (e)++)
 
-#define vector_destroy(vector)			\
-  (free ((vector)->base))
-
-#define vector_push(vector, entry)				\
-  do								\
-    {								\
-      if ((vector)->items >= (vector)->size)			\
-	{							\
-	  (vector)->size *= 2;					\
-	  (vector)->base = xnrealloc ((vector)->base,		\
-				     (vector)->size,		\
-				     sizeof (*(vector)->base));	\
-	}							\
-      *((vector)->base + (vector)->items++) = (entry);		\
-    }								\
-  while (0)
-
-#define vector_is_empty(vector)			\
-  ((vector)->items == 0)
-
-#define vector_top(vector)			\
-  (*((vector)->base + (vector)->items - 1))
-
-#define vector_pop(vector)			\
-  (*((vector)->base + --(vector)->items))
-
-#define vector_size(vector)			\
-  ((vector)->items)
-
-#define VECTOR_FOREACH(vector, var)				\
-  for ((var) = (vector)->base; (var) < (vector)->base + (vector)->items; ++(var))
-  
-#endif /* VECTOR_H_INCLUDED */
+#endif /* VECTOR2_H_INCLUDED */

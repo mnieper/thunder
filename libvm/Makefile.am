@@ -20,6 +20,7 @@ lib_LTLIBRARIES = libthunder.la
 
 libthunder_la_SOURCES = vm.c
 libthunder_la_LIBADD = ../common/libvmcommon.la
+libthunder_la_LDFLAGS = -export-symbols-regex '^vm_'
 libthunder_la_CPPFLAGS = -I$(top_builddir)/lib			\
 -I$(top_srcdir)/lightning/include -I$(top_srcdir)/include	\
 -I$(top_srcdir)/common

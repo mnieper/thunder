@@ -9,9 +9,9 @@
  * your option) any later version.
  *
  * Thunder is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
- * or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
- * License for more details.
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
  *
  * Authors:
  *      Marc Nieper-Wißkirchen
@@ -20,6 +20,15 @@
 #ifndef COMPILER_H_INCLUDED
 #define COMPILER_H_INCLUDED
 
-#define INSTRUCTION(name) SYMBOL(INSTRUCTION_##name)
+#include "heap.h"
+#include "libthunder.h"
+#include "object.h"
+
+void init_compiler (void);
+void finish_compiler (void);
+
+Object compile (Heap *heap, Object code);
+
+extern int (*trampoline) (Vm *vm, void *f, void *arg);
 
 #endif /* COMPILER_H_INCLUDED */

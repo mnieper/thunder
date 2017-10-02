@@ -20,5 +20,6 @@ AM_CPPFLAGS = -I$(top_srcdir)/include -I$(top_builddir)/lib
 AM_LDFLAGS = -dlopen self
 
 bin_PROGRAMS = thunder
-thunder_SOURCES = main.c
-thunder_LDADD = $(LTLIBINTL) ../libvm/libthunder.la
+thunder_SOURCES = main.c version-etc-copyright.c
+thunder_LDADD = $(LTLIBINTL) $(top_builddir)/libvm/libthunder.la	\
+$(top_builddir)/lib/libgnu.la

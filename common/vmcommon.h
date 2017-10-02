@@ -9,9 +9,9 @@
  * your option) any later version.
  *
  * Thunder is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
- * or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
- * License for more details.
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
  *
  * Authors:
  *      Marc Nieper-Wißkirchen
@@ -29,31 +29,20 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "compiler.h"
 #include "deque.h"
 #include "hash.h"
 #include "obstack.h"
 #include "unitypes.h"
 #include "xalloc.h"
 
+#include "assembly.h"
+#include "compiler.h"
+
 typedef jit_pointer_t EntryPoint;
 
-struct assembly
-{
-  jit_state_t *jit;
-  struct obstack data;
-  EntryPoint *entry_points;
-  size_t entry_point_number;
-  bool clear;
-};
-typedef struct assembly Assembly[1];
 
 #define SYMBOL(id) symbols[SYMBOL_##id]
-
-/* TODO (XXX): Move resources to resource.def. */
-#define RESOURCES						\
-  ENTRY (EXACT_NUMBER, mpq_t, mpq_init, mpq_clear)		\
-  ENTRY (INEXACT_NUMBER, mpc_t, complex_init, mpc_clear)	\
-  ENTRY (ASSEMBLY, Assembly, assembly_init, assembly_destroy)
 
 #define WORDSIZE       (sizeof (Object))
 #define ALIGNMENT      (2 * WORDSIZE)
@@ -100,11 +89,10 @@ typedef struct assembly Assembly[1];
 #define EOF_TYPE       MAKE_IMMEDIATE_TYPE (3)
 #define UNDEFINED_TYPE MAKE_IMMEDIATE_TYPE (4)
 
+#include "object.h"
+
 void *
 xaligned_alloc (size_t alignment, size_t size);
-
-typedef jit_uword_t Object;
-typedef Object*     Pointer;
 
 bool
 is_immediate (Object object);
@@ -213,21 +201,24 @@ symbol_table_clear (SymbolTable *restrict symbol_table, bool major_gc);
   (res->payload)
 
 #define TYPE(id)         id##_TYPE
+#define resources(id)    resource_##id
 #define resource(id)     resource_##id
 #define Resource(id)	 Resource_##id
+#define resourceList(id) resource_list_##id
 #define ResourceList(id) ResourceList_##id
+#define RESOURCES(id)    DEQUE(Resource(id), resources(id))
 
-#define ENTRY(id, type, init, destroy)			\
-  typedef struct resource(id) Resource(id);		\
-  typedef DEQUE(resource(id)) ResourceList(id);		\
-  struct resource(id)					\
-  {							\
-    Object header;					\
-    type payload;					\
-    bool in_nursery;					\
-    DEQUE_ENTRY(resource(id));				\
-  };
-RESOURCES
+#define ENTRY(id, type, init, destroy)					\
+  typedef struct resource(id) Resource(id);				\
+  struct resource(id)							\
+  {									\
+    Object header;							\
+    type payload;							\
+    bool in_nursery : 1;						\
+    struct deque_entry resources(id);					\
+  };									\
+  typedef struct deque ResourceList(id);
+#include "resources.def"
 #undef ENTRY
 
 #define nursery_list(id) nursery_list_##id
@@ -241,7 +232,7 @@ struct resource_manager
   ResourceList(id) nursery_list(id);		\
   ResourceList(id) heap_list(id);		\
   ResourceList(id) free_list(id);
-  RESOURCES
+#include "resources.def"
 #undef ENTRY
   bool major_gc;
 };
@@ -257,7 +248,7 @@ resource_manager_destroy (ResourceManager *rm);
 #define ENTRY(id, type, init, destroy)			\
   Resource(id) *					\
   resource_manager_allocate_##id (ResourceManager *rm);
-RESOURCES
+#include "resources.def"
 #undef ENTRY
 
 void
@@ -271,12 +262,13 @@ resource_manager_end_gc (ResourceManager *rm);
 #define ENTRY(id, type, init, destroy)		\
   void								\
   resource_manager_mark_##id (ResourceManager *rm, Resource(id) *res);
-RESOURCES
+#include "resources.def"
 #undef ENTRY
 
 /* Heap */
 
-typedef struct heap Heap;
+#include "heap.h"
+
 struct heap
 {
   Pointer start;
@@ -601,31 +593,14 @@ init (void);
 
 /* Compiler */
 
-void
-init_compiler (void);
-
-void
-finish_compiler (void);
-
-void
-assembly_init (Assembly assembly);
-
-void
-assembly_destroy (Assembly assembly);
-
-Object
-compile (Heap *heap, Object code);
-
-bool
-is_assembly (Object obj);
-
-size_t
-assembly_entry_point_number (Object assembly);
-
-EntryPoint *
-assembly_entry_points (Object assembly);
-
-extern int (*trampoline) (Vm *vm, void *f, void *heap, void *arg);
+void init_compiler (void);
+void finish_compiler (void);
+void assembly_init (Assembly assembly);
+void assembly_destroy (Assembly assembly);
+Object compile (Heap *heap, Object code);
+bool is_assembly (Object obj);
+size_t assembly_entry_point_number (Object assembly);
+EntryPoint *assembly_entry_points (Object assembly);
 
 /* Initial symbols */
 

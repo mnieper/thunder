@@ -65,7 +65,7 @@ mutation_table_insert (MutationTable *table, Pointer pointer)
 static Pointer
 flip (Heap *restrict heap)
 {
-  Pointer old_start = heap->start;  
+  Pointer old_start = heap->start;
   heap->free = heap->start = xaligned_alloc (2 * WORDSIZE, heap->heap_size);
   return old_start;
 }
@@ -117,18 +117,18 @@ copy (Heap *heap, Pointer from)
   if (size > free_space (heap))
     xalloc_die ();
   heap->free += size;
-  
+
   memcpy (to, from, size * WORDSIZE);
-  
+
   if ((*to & HEADER_TYPE_MASK) == SYMBOL_TYPE)
     to = (Pointer) symbol_table_intern (&heap->symbol_table, (Object) (to + 1), true) - 1;
-  
+
   *from = make_mark (to);
 
   return to;
 }
 
-static Pointer 
+static Pointer
 forward (Heap *heap, Pointer from)
 {
   Pointer from_header = object_header (from);
@@ -145,7 +145,7 @@ process (Heap *heap, Object *object)
       || is_well_known_symbol ((Pointer) *object)
       || is_in_heap (heap, (Pointer) *object))
     return;
-  
+
   if (is_unmanaged ((Pointer) *object))
     {
       switch (header_type ((Pointer) *object))
@@ -156,7 +156,7 @@ process (Heap *heap, Object *object)
 				   &heap->resource_manager,		\
 				   (Resource(id) *) ((Pointer) *object - 1)); \
 	    return;
-	  RESOURCES
+#         include "resources.def"
 #undef ENTRY
 	}
     }
@@ -178,7 +178,7 @@ scan (Heap *heap, Pointer ref)
   /* Check for a binary object without any pointers. */
   if (start == NULL)
     return;
-  
+
   size_t size = object_size (ref);
   Pointer end = ref + size;
 
@@ -192,7 +192,7 @@ collect (Heap *restrict heap, Object roots[], size_t root_count)
   /* FIXME(XXX): We have to add the obstack space to the nursery_size. */
   Pointer old_start = (free_space (heap) < heap->nursery_size / WORDSIZE) ? flip (heap) : NULL;
   Pointer ref = heap->start;
-  
+
   resource_manager_begin_gc (&heap->resource_manager, old_start != NULL);
 
   if (old_start == NULL)
@@ -200,16 +200,16 @@ collect (Heap *restrict heap, Object roots[], size_t root_count)
   mutation_table_clear (heap->mutation_table);
 
   symbol_table_clear (&heap->symbol_table, old_start != NULL);
-  
+
   for (size_t i = 0; i < SYMBOL_COUNT; ++i)
     process (heap, &symbols[i]);
 
   for (size_t i = 0; i < root_count; ++i)
     process (heap, &roots [i]);
-  
+
   for (; ref < heap->free; ref += object_size (ref))
     scan (heap, ref);
-  
+
   if (old_start != NULL)
     free (old_start);
 

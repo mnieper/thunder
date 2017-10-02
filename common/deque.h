@@ -9,9 +9,9 @@
  * your option) any later version.
  *
  * Thunder is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
- * or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
- * License for more details.
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
  *
  * Authors:
  *      Marc Nieper-Wißkirchen
@@ -20,74 +20,96 @@
 #ifndef DEQUE_H_INCLUDED
 #define DEQUE_H_INCLUDED
 
+#include <stdbool.h>
 #include <stddef.h>
 
-#define DEQUE_ENTRY(name)			\
-  struct					\
-  {						\
-    struct name *next;                          \
-    struct name **prev;				\
-  } deque_entries
+#define DEQUE(type, field) (type, field)
 
-#define DEQUE(name)				\
-  struct 					\
-  {						\
-    struct name *first;				\
-    struct name **last;				\
-    struct name *tmp;				\
-  }
+struct deque_entry
+{
+  struct deque_entry *next;
+  struct deque_entry *prev;
+};
+typedef struct deque_entry DequeEntry;
 
-#define deque_init(deque)			\
-  do						\
-    {						\
-      (deque)->first = NULL;			\
-      (deque)->last = &(deque)->first;		\
-    }						\
-  while (0)
+struct deque
+{
+  struct deque_entry *first;
+  struct deque_entry *last;
+};
+typedef struct deque Deque;
 
-#define deque_insert(deque, entry)			\
-  do							\
-    {							\
-      (entry)->deque_entries.next = NULL;		\
-      (entry)->deque_entries.prev = (deque)->last;	\
-      *(deque)->last = (entry);				\
-      (deque)->last = &(entry)->deque_entries.next;	\
-    }							\
-  while (0)
+void deque_impl_init (struct deque *);
+struct deque_entry *deque_impl_first (struct deque *);
+struct deque_entry *deque_impl_last (struct deque *);
+struct deque_entry *deque_impl_next (struct deque_entry *);
+struct deque_entry *deque_impl_previous (struct deque_entry *);
+bool deque_impl_empty (struct deque const *);
+void deque_impl_insert_last (struct deque *, struct deque_entry *);
+void deque_impl_concat (struct deque *, struct deque *);
+void deque_impl_remove (struct deque *, struct deque_entry *);
+struct deque_entry *deque_impl_pop_first (struct deque *);
 
-#define deque_first(deque)			\
-  ((deque)->first)
+static inline char *
+deque__offset (char *p, ptrdiff_t offset)
+{
+  if (p == NULL)
+    return NULL;
+  return p + offset;
+}
 
-#define deque_is_empty(deque)			\
-  (deque_first (deque) == NULL)
+#define DEQUE__EXPAND(...) __VA_ARGS__
+#define DEQUE__FIRST(a, b) a
+#define DEQUE__SECOND(a, b) b
 
-#define deque_concat(deque1, deque2)				\
-  do								\
-    {								\
-      if (!deque_is_empty (deque2))				\
-	{	 						\
-          *(deque1)->last = (deque2)->first;			\
-          (deque2)->first->deque_entries.prev = (deque1)->last;	\
-	  (deque1)->last = (deque2)->last;			\
-	  deque_init ((deque2));				\
-	}							\
-    }								\
-  while (0)
+#define DEQUE_ENTRY_TYPE(DEQUE) DEQUE__EXPAND(DEQUE__FIRST DEQUE)
+#define DEQUE_ENTRY_FIELD(DEQUE) DEQUE__EXPAND(DEQUE__SECOND DEQUE)
+#define DEQUE_FIELD(DEQUE, entry)					\
+  _Generic ((entry),							\
+	    DEQUE_ENTRY_TYPE (DEQUE) *: (&((entry)->DEQUE_ENTRY_FIELD (DEQUE))))
+#define DEQUE_ENTRY(DEQUE, entry)					\
+  ((DEQUE_ENTRY_TYPE(DEQUE) *)						\
+   deque__offset ((char *) entry,					\
+		  - offsetof (DEQUE_ENTRY_TYPE(DEQUE),			\
+			      DEQUE_ENTRY_FIELD(DEQUE))))
 
-#define deque_remove(deque, entry)					\
-  ((((entry)->deque_entries.next) != NULL)				\
-   ? ((entry)->deque_entries.next->deque_entries.prev			\
-      = (entry)->deque_entries.prev, 0)					\
-   : ((deque)->last = (entry)->deque_entries.prev, 0),			\
-   *(entry)->deque_entries.prev = (entry)->deque_entries.next)
+#define deque_initializer(DEQUE, deque) { .first = NULL, .last = NULL }
+#define deque_init(DEQUE, deque)		\
+  (deque_impl_init (deque))
+#define deque_first(DEQUE, deque)		\
+  DEQUE_ENTRY (DEQUE, deque_impl_first (deque))
+#define deque_last(DEQUE, deque)		\
+  DEQUE_ENTRY (DEQUE, deque_impl_last (deque))
+#define deque_next(DEQUE, entry)			\
+  DEQUE_ENTRY (DEQUE, deque_impl_next (DEQUE_FIELD (DEQUE, entry)))
+#define deque_previous(DEQUE, entry)		\
+  DEQUE_ENTRY (DEQUE, deque_impl_previous (DEQUE_FIELD (DEQUE, entry)))
+#define deque_empty(DEQUE, deque)		\
+  (deque_impl_empty (deque))
+#define deque_insert_last(DEQUE, deque, entry)	\
+  (deque_impl_insert_last (deque, DEQUE_FIELD (DEQUE, entry)))
+#define deque_concat(DEQUE, deque1, deque2)	\
+  (deque_impl_concat (deque1, deque2))
+#define deque_remove(DEQUE, deque, entry)	\
+  (deque_impl_remove (deque, DEQUE_FIELD(DEQUE, entry)))
+#define deque_pop_first(DEQUE, deque)		\
+  DEQUE_ENTRY (DEQUE, deque_impl_pop_first (deque))
 
-#define deque_pop(deque)						\
-  (deque_is_empty (deque)						\
-   ? NULL								\
-   : ((deque)->tmp = deque_first (deque),			\
-      (deque_remove (deque, (deque)->tmp)),			\
-      (deque)->tmp))
+#define deque_foreach(var, DEQUE, deque)				\
+  for (DEQUE_ENTRY_TYPE(DEQUE) *(var) = deque_first (DEQUE, deque);	\
+       (var) != NULL;							\
+       (var) = deque_next(DEQUE, (var)))
 
-#define deque_destroy(deque)
+#define deque_foreach_reverse(var, DEQUE, deque)			\
+  for (DEQUE_ENTRY_TYPE(DEQUE) *(var) = deque_last (DEQUE, deque); \
+       (var) != NULL;							\
+       (var) = deque_previous (DEQUE, (var)))
+
+#define deque_foreach_safe(var, DEQUE, deque)				\
+  for (DEQUE_ENTRY_TYPE(DEQUE)						\
+	 *(var) = deque_first (DEQUE, deque),				\
+	 *deque__tmp = NULL;						\
+       (var) != NULL && (deque__tmp = deque_next (DEQUE, (var)), true);	\
+       (var) = deque__tmp)
 
 #endif /* DEQUE_H_INCLUDED */

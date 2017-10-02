@@ -6,8 +6,10 @@
 /warn-on-use.h
 /check.sh
 /test.sh
+/bitset
 /compiler
 /deque
+/graph
 /gc
 /image
 /number

@@ -25,19 +25,39 @@ AM_CPPFLAGS = -I$(top_srcdir)/include -I$(top_builddir)/lib	\
 -I$(top_srcdir)/common -I$(top_srcdir)/lightning/include
 AM_LDFLAGS = -dlopen self
 
-LDADD = $(top_builddir)/common/libvmcommon.la $(top_builddir)/libvm/libthunder.la
+LDADD = $(top_builddir)/common/libvmcommon.la	\
+	$(top_builddir)/libvm/libthunder.la
 
 TEST_EXTENSIONS = .tst
-LOG_COMPILER = $(LIBTOOL) --mode=execute $(VALGRIND) --suppressions=$(top_builddir)/lib/malloca.valgrind
+LOG_COMPILER = $(LIBTOOL) --mode=execute $(VALGRIND)	\
+	--suppressions=$(top_builddir)/lib/malloca.valgrind
 TST_LOG_COMPILER = ./check.sh
 TESTS_ENVIRONMENT = @LOCALCHARSET_TESTS_ENVIRONMENT@
 
-check_PROGRAMS = compiler deque image number object symbol_table	\
-reader runtime stack vector write gc
+check_PROGRAMS = program compiler array bitset deque graph image	\
+	number object symbol_table reader runtime stack vector write	\
+	gc compiler2
+
+compiler2_SOURCES = compiler2.c ../common/set.h common/list.h	\
+	common/vector2.h ../common/compiler2/program.c		\
+	../common/compiler2/dfs.c ../common/compiler2/common.h	\
+	../common/compiler2/dominance.c				\
+	../common/compiler2/liveness.c				\
+	../common/compiler2/instruction.c			\
+	../common/compiler2/ssa-destruction.c			\
+	../common/bitset.c		\
+	../common/bitset.h
+compiler2_LDADD = $(top_builddir)/lib/libgnu.la
+
+program_SOURCES = program.c program.h
 
 compiler_SOURCES = compiler.c macros.h
 
+bitset_SOURCES = bitset.c
+
 deque_SOURCES = deque.c macros.h
+
+graph_SOURCES = graph.c macros.h
 
 image_SOURCES = image.c macros.h
 

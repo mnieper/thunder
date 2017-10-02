@@ -25,33 +25,47 @@
 #include "deque.h"
 #include "macros.h"
 
+typedef struct entry Entry;
+struct entry
+{
+  int value;
+  DequeEntry entries;
+};
+#define ENTRIES DEQUE(struct entry, entries)
+
 int
 main (int argc, char *argv)
 {
-  typedef struct entry Entry;
-  struct entry
-  {
-    int value;
-    DEQUE_ENTRY(entry);
-  };
 
-  DEQUE(entry) q;
-  deque_init (&q);
-  
-  ASSERT (deque_is_empty (&q));
+  Deque q;
+  deque_init (ENTRIES, &q);
+
+  ASSERT (deque_empty (ENTRIES, &q));
 
   Entry e1 = { .value = 1 };
-  deque_insert (&q, &e1);
-  ASSERT (!deque_is_empty (&q));
+  deque_insert_last (ENTRIES, &q, &e1);
+  ASSERT (!deque_empty (ENTRIES, &q));
 
-  DEQUE(entry) p;
-  deque_init (&p);
-  deque_concat (&p, &q);
-  ASSERT (deque_is_empty (&q));
-  ASSERT (!deque_is_empty (&p));
+  ASSERT (deque_last (ENTRIES, &q)->value == 1);
 
-  ASSERT (deque_pop (&p) == &e1);
-  ASSERT (deque_is_empty (&p));
+  Deque p = deque_initializer (ENTRIES, p);
+  deque_concat (ENTRIES, &p, &q);
+  ASSERT (deque_empty (ENTRIES, &q));
+  ASSERT (!deque_empty (ENTRIES, &p));
 
-  deque_destroy (&p);
+  ASSERT (deque_last (ENTRIES, &p)->value == 1);
+
+  ASSERT (deque_pop_first (ENTRIES, &p) == &e1);
+  ASSERT (deque_empty (ENTRIES, &p));
+
+  Entry e2 = { .value = 2 };
+  deque_insert_last (ENTRIES, &p, &e1);
+  deque_insert_last (ENTRIES, &p, &e2);
+
+  {
+    int order[] = { 2, 1 };
+    size_t i = 0;
+    deque_foreach_reverse (e, ENTRIES, &p)
+      ASSERT (e->value == order[i++]);
+  }
 }

@@ -29,12 +29,13 @@ EXPAND_SYMBOL(CODE, u8"code")
 EXPAND_SYMBOL(CONS, u8"cons")
 EXPAND_SYMBOL(CAR, u8"car")
 EXPAND_SYMBOL(CDR, u8"cdr")
-EXPAND_SYMBOL(SET_CAR, u8"set-car!")				
-EXPAND_SYMBOL(SET_CDR, u8"set-cdr!")				
-EXPAND_SYMBOL(VECTOR, u8"vector")				
-EXPAND_SYMBOL(VECTOR_SET, u8"vector-set!")			
-EXPAND_SYMBOL(STRING, u8"string")				
-EXPAND_SYMBOL(SYMBOL, u8"symbol")				
+EXPAND_SYMBOL(SET_CAR, u8"set-car!")
+EXPAND_SYMBOL(SET_CDR, u8"set-cdr!")
+EXPAND_SYMBOL(VECTOR, u8"vector")
+EXPAND_SYMBOL(VECTOR_SET, u8"vector-set!")
+EXPAND_SYMBOL(STRING, u8"string")
+EXPAND_SYMBOL(SYMBOL, u8"symbol")
+EXPAND_SYMBOL(UNNAMED, u8"unnamed")
 EXPAND_SYMBOL(R0, u8"%r0")
 EXPAND_SYMBOL(R1, u8"%r1")
 EXPAND_SYMBOL(R2, u8"%r2")
@@ -47,11 +48,23 @@ EXPAND_SYMBOL(F2, u8"%f2")
 EXPAND_SYMBOL(F3, u8"%f3")
 EXPAND_SYMBOL(F4, u8"%f4")
 EXPAND_SYMBOL(F5, u8"%f5")
+
+EXPAND_SYMBOL(JMP, u8"jmp")
+EXPAND_SYMBOL(BR, u8"br")
+EXPAND_SYMBOL(FROB, u8"frob")
+EXPAND_SYMBOL(PERFORM, u8"perform")
+EXPAND_SYMBOL(SWITCH, u8"switch")
+EXPAND_SYMBOL(MOVR, u8"movr")
+
 EXPAND_SYMBOL(PAIRP, u8"pair?")
 EXPAND_SYMBOL(BOOLEANP, u8"boolean?")
 EXPAND_SYMBOL(VECTORP, u8"vector?")
 
-#define EXPAND_INSTRUCTION(name, type)		\
-  EXPAND_SYMBOL (INSTRUCTION_##name, u8 ## #name)
-#include "instructions.def"
-#undef EXPAND_INSTRUCTION
+#define EXPAND_OPCODE(name, type)		\
+  EXPAND_SYMBOL (OPCODE_##name, u8 ## #name)
+#include "compiler/opcodes.def"
+#undef EXPAND_OPCODE
+
+/* Local Variables: */
+/* mode: c */
+/* End: */
