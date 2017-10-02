@@ -31,6 +31,7 @@ void program_init (Program *program);
 void program_destroy (Program *program);
 
 Variable *program_create_var (struct compiler *compiler);
+Block *program_create_block (struct compiler *compiler);
 void program_add_cfg_edge (Block *source, Block *target);
 
 struct program

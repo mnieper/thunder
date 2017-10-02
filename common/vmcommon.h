@@ -29,18 +29,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "assembly.h"
 #include "compiler.h"
 #include "deque.h"
 #include "hash.h"
 #include "obstack.h"
 #include "unitypes.h"
 #include "xalloc.h"
-
-#include "assembly.h"
-#include "compiler.h"
-
-typedef jit_pointer_t EntryPoint;
-
 
 #define SYMBOL(id) symbols[SYMBOL_##id]
 
@@ -139,32 +134,15 @@ struct object_stack
   void *base;
 };
 
-void
-object_stack_init (ObjectStack *restrict stack);
-
-void
-object_stack_clear (ObjectStack *restrict stack);
-
-void
-object_stack_destroy (ObjectStack *restrict stack);
-
-void
-object_stack_grow (ObjectStack *restrict stack, Object obj);
-
-void
-object_stack_grow0 (ObjectStack *restrict stack);
-
-void
-object_stack_ucs4_grow (ObjectStack *restrict stack, ucs4_t c);
-
-void
-object_stack_utf8_grow (ObjectStack *restrict stack, uint8_t *s, size_t len);
-
-void
-object_stack_align (ObjectStack *restrict stack);
-
-Object
-object_stack_finish (ObjectStack *restrict stack);
+void object_stack_init (ObjectStack *stack);
+void object_stack_clear (ObjectStack *stack);
+void object_stack_destroy (ObjectStack *stack);
+void object_stack_grow (ObjectStack *stack, Object obj);
+void object_stack_grow0 (ObjectStack *stack);
+void object_stack_ucs4_grow (ObjectStack *stack, ucs4_t c);
+void object_stack_utf8_grow (ObjectStack *stack, uint8_t *s, size_t len);
+void object_stack_align (ObjectStack *stack);
+Object object_stack_finish (ObjectStack *stack);
 
 
 /* Symbol table */
@@ -454,7 +432,7 @@ inexact_number_value (Object num);
 Object
 make_procedure (Heap *heap, Object code);
 
-Object
+Assembly *
 procedure_assembly (Object proc);
 
 size_t
@@ -590,17 +568,6 @@ object_get_str (Object obj);
 /* Initialization */
 void
 init (void);
-
-/* Compiler */
-
-void init_compiler (void);
-void finish_compiler (void);
-void assembly_init (Assembly assembly);
-void assembly_destroy (Assembly assembly);
-Object compile (Heap *heap, Object code);
-bool is_assembly (Object obj);
-size_t assembly_entry_point_number (Object assembly);
-EntryPoint *assembly_entry_points (Object assembly);
 
 /* Initial symbols */
 

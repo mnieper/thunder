@@ -42,7 +42,7 @@ static void close_dynamic_module ();
 
 static jit_pointer_t *trampoline_return;
 
-int (*trampoline) (Vm *vm, void *f, void *arg);
+int (*trampoline) (Vm *vm, void *f, void *local_heap, void *arg);
 
 void
 init_compiler (void)
@@ -95,6 +95,7 @@ init_trampoline (void)
   jit_frame (FRAME_SIZE);
   jit_node_t *vm = jit_arg ();
   jit_node_t *f = jit_arg ();
+  jit_node_t *local_heap = jit_arg ();
   jit_node_t *arg = jit_arg ();
   jit_getarg (JIT_R0, f);
   jit_getarg (JIT_V0, arg);

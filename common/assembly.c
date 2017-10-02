@@ -22,7 +22,12 @@
 #endif
 #include <lightning.h>
 
+#include "obstack.h"
 #include "vmcommon.h"
+#include "xalloc.h"
+
+#define obstack_chunk_alloc xmalloc
+#define obstack_chunk_free free
 
 void
 assembly_init (Assembly assembly)

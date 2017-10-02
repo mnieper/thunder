@@ -26,6 +26,7 @@
 #include "bitrotate.h"
 #include "common.h"
 #include "hash.h"
+#include "vmcommon.h"
 #include "xalloc.h"
 
 typedef struct opcode_table OpcodeTable;
@@ -33,13 +34,15 @@ typedef struct opcode_table OpcodeTable;
 static OpcodeTable *opcode_table_create ();
 static void opcode_table_free (OpcodeTable *table);
 static size_t opcode_table_hash (Opcode const *opcode, size_t n);
-static bool opcode_table_compare (Opcode const *opcode1, Opcode const *opcode2);
+static bool opcode_table_compare (Opcode const *opcode1, Opcode const *opcode);
 static Opcode *opcode_table_lookup (OpcodeTable *table, Object name);
-static void opcode_table_insert (OpcodeTable *table, Object name);
+static void opcode_table_insert (OpcodeTable *table, Object name,
+				 Opcode *opcode);
 
 #define DECLARE_PARSER(type)						\
-  static void opcode_parse_##type (Parser *parser, Block *block,	\
-				   Opcode const *opcode, Object operands);
+  static void opcode_parse_##type (Compiler *compiler, Parser *parser,	\
+				   Block *block, Opcode const *opcode,	\
+				   Object operands);
 DECLARE_PARSER(ri)
 DECLARE_PARSER(branch_r)
 DECLARE_PARSER(jmp)
@@ -51,11 +54,11 @@ static OpcodeTable *opcodes;
 struct opcode
 {
   Object name;
-  void (* const parse) (Parser *, Block *, const Opcode *, Object);
+  void (* const parse) (Compiler *, Parser *, Block *, const Opcode *, Object);
 };
 
 enum {
-#define EXPAND_OPCODE(name)			\
+#define EXPAND_OPCODE(name, type)			\
   OPCODE_INDEX_##name,
 # include "opcodes.def"
 #undef EXPAND_OPCODE
@@ -63,9 +66,11 @@ enum {
 };
 
 #define EXPAND_OPCODE(name, type)		\
-  static Opcode opcode##_name = {		\
-    .parse = opcode_parse##_type		\
+  static Opcode opcode_##name = {		\
+    .parse = opcode_parse_##type		\
   };
+#include "opcodes.def"
+#undef EXPAND_OPCODE
 
 #define OPCODE(name) SYMBOL(OPCODE_##name)
 
@@ -81,7 +86,7 @@ finish_opcode (void)
   opcode_table_free (opcodes);
 }
 
-Opcode *
+Opcode const *
 opcode_lookup (Object name)
 {
   Opcode const *opcode = opcode_table_lookup (opcodes, name);
@@ -90,27 +95,34 @@ opcode_lookup (Object name)
 }
 
 void
-opcode_parse (Parser *parser, Block *block, const Opcode *opcode,
-	      Object operands)
+opcode_parse (Compiler *compiler, Parser *parser, Block *block,
+	      const Opcode *opcode, Object operands)
 {
-  opcode->parse (parser, block, opcode, operands);
+  opcode->parse (compiler, parser, block, opcode, operands);
 }
 
 static OpcodeTable *
 opcode_table_create ()
 {
-  OpcodeTable *table = (OpcodeTable *) hash_initialize (OPCODE_COUNT,
-							NULL,
-							opcode_table_hash,
-							opcode_table_compare,
-							NULL);
+  OpcodeTable *table = (OpcodeTable *)
+    hash_initialize (OPCODE_COUNT,
+		     NULL,
+		     (Hash_hasher) opcode_table_hash,
+		     (Hash_comparator) opcode_table_compare,
+		     NULL);
   if (table == NULL)
     xalloc_die ();
 #define EXPAND_OPCODE(name, type)				\
-  opcode_table_insert (table, OPCODE(name), opcode##_name)
+  opcode_table_insert (table, OPCODE(name), &opcode_##name);
 # include "opcodes.def"
 #undef EXPAND_OPCODE
   return table;
+}
+
+static void
+opcode_table_free (OpcodeTable *table)
+{
+  hash_free ((Hash_table *) table);
 }
 
 static size_t
@@ -143,46 +155,46 @@ opcode_table_insert (OpcodeTable *table, Object name, Opcode *opcode)
 
 #define DEFINE_PARSER(type)						\
   static void								\
-  opcode_parse_##type (Parser *parser, Block *block,			\
+  opcode_parse_##type (Compiler *compiler, Parser *parser, Block *block, \
 		       Opcode const *opcode, Object operands)
 #define ASSURE_NO_MORE_OPERANDS			\
   do						\
     {						\
-      assure (is_null (operands))		\
+      assure (is_null (operands));		\
     }						\
   while (0)
 
 DEFINE_PARSER(ri)
 {
-  Instruction *ins = block_add_instruction (block, opcode);
-  parser_parse_dest_reg (parser, ins, &operands);
-  parser_parse_source_reg (parser, ins, &operands);
+  Instruction *ins = block_add_instruction (compiler, block, opcode);
+  parser_parse_register (parser, ins, &operands);
   parser_parse_immediate (parser, &operands);
   ASSURE_NO_MORE_OPERANDS;
+  parser_define_var (parser, ins);
 }
 
 DEFINE_PARSER(branch_r)
 {
-  Instruction *ins = block_add_instruction (block, opcode);
-  parser_parse_label (parser, block, &operands);
-  parser_parse_label (parser, block, &operands);
-  parser_parse_source_reg (parser, ins, &operands);
-  parser_parse_source_reg (parser, ins, &operands);
+  Instruction *ins = block_add_instruction (compiler, block, opcode);
+  parser_parse_label (parser, &operands);
+  parser_parse_label (parser, &operands);
+  parser_parse_register (parser, ins, &operands);
+  parser_parse_register (parser, ins, &operands);
   ASSURE_NO_MORE_OPERANDS;
   parser_terminate_block (parser);
 }
 
 DEFINE_PARSER(jmp)
 {
-  block_add_instruction (block, opcode);
-  parser_parse_label (parser, block, &operands);
+  block_add_instruction (compiler, block, opcode);
+  parser_parse_label (parser, &operands);
   ASSURE_NO_MORE_OPERANDS;
   parser_terminate_block (parser);
 }
 
 DEFINE_PARSER(ret)
 {
-  block_add_instruction (block, opcode);
+  block_add_instruction (compiler, block, opcode);
   // TODO: Add RETURN register
   ASSURE_NO_MORE_OPERANDS;
   parser_terminate_block (parser);

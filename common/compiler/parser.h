@@ -19,6 +19,7 @@
 
 #ifndef COMPILER_PARSER_H
 #define COMPILER_PARSER_H
+#include <lightning.h>
 
 #include "object.h"
 
@@ -31,7 +32,9 @@ void parse_code (struct compiler *compiler, Object code);
 
 void parser_terminate_block (Parser *parser);
 void parser_parse_label (Parser *parser, Object *operands);
-void parser_parse_source_reg (Parser *parser, struct instruction *ins, Object *operands);
-void parser_parse_dest_reg (Parser *parser, struct instruction *ins, Object *operands);
+void parser_parse_register (Parser *parser, struct instruction *ins,
+			    Object *operands);
+void parser_define_var (Parser *parser, struct instruction *ins);
+jit_word_t parser_parse_immediate (Parser *parser, Object *operands);
 
 #endif

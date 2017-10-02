@@ -24,6 +24,7 @@
 
 typedef struct opcode Opcode;
 
+struct compiler;
 struct parser;
 struct block;
 
@@ -31,7 +32,7 @@ void init_opcode (void);
 void finish_opcode (void);
 
 Opcode const* opcode_lookup (Object operator);
-static void opcode_parse (struct parser *parser, struct block *block,
-			  const Opcode *opcode, Object operands);
+void opcode_parse (struct compiler *compiler, struct parser *parser,
+		   struct block *block, const Opcode *opcode, Object operands);
 
 #endif /* COMPILER_OPCODE_H_INCLUDED */

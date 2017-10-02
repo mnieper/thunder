@@ -21,6 +21,7 @@
 #define ASSEMBLY_H_INCLUDED
 
 #include <lightning.h>
+#include <stddef.h>
 
 #include "obstack.h"
 
@@ -37,12 +38,26 @@ typedef struct assembly Assembly[1];
 void assembly_init (Assembly assembly);
 void assembly_destroy (Assembly assembly);
 void assembly_clear (Assembly assembly);
-static inline jit_state_t *assembly_jit (Assembly assembly);
+static inline jit_state_t *assembly_jit (Assembly const assembly);
+static inline size_t assembly_entry_point_count (Assembly const assembly);
+static inline jit_pointer_t *assembly_entry_points (Assembly const assembly);
 
 jit_state_t *
-assembly_jit (Assembly assembly)
+assembly_jit (Assembly const assembly)
 {
   return assembly->jit;
+}
+
+size_t
+assembly_entry_point_count (Assembly const assembly)
+{
+  return assembly->entry_point_count;
+}
+
+jit_pointer_t *
+assembly_entry_points (Assembly const assembly)
+{
+  return assembly->entry_points;
 }
 
 #endif /* ASSEMBLY_H_INCLUDED */

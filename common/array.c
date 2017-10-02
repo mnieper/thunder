@@ -25,7 +25,7 @@
 
 size_t array_hash (size_t const *entry, size_t n)
 {
-  return entry % n;
+  return *entry % n;
 }
 
 bool array_compare (size_t const *entry1, size_t const *entry2)

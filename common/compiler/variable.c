@@ -32,7 +32,7 @@ struct variable
 Variable *
 variable_create (Compiler *compiler)
 {
-  Variable *var = COMPILER_ALLOC (Variable);
+  Variable *var = COMPILER_ALLOC (compiler, Variable);
   return var;
 }
 

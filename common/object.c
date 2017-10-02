@@ -119,7 +119,7 @@ object_header (Pointer pointer)
     return pointer;
 
   pointer--;
-  
+
   if (is_header (*pointer) || is_marked (*pointer))
     return pointer;
 
@@ -157,10 +157,10 @@ object_pointers (Pointer header)
     return NULL;
 
   Pointer end = header + object_size (header);
-  
-  /* Skip size field if present. */  
+
+  /* Skip size field if present. */
   Pointer start = header_payload (*header) ? header + 2 : header + 1;
-  
+
   while (start < end)
     {
       if (is_link (*start))
@@ -220,7 +220,7 @@ is_eof_object (Object object)
 Object
 make_char (uint32_t c)
 {
-  return (c << IMMEDIATE_PAYLOAD_SHIFT) | CHAR_TYPE;  
+  return (c << IMMEDIATE_PAYLOAD_SHIFT) | CHAR_TYPE;
 }
 
 uint32_t
@@ -366,7 +366,7 @@ string (Heap *heap, Object chars)
   object_stack_align (&heap->stack);
   Object str = object_stack_finish (&heap->stack) | POINTER_TYPE;
   ((Pointer) str)[0] = n * sizeof (ucs4_t);
-  return str;  
+  return str;
 }
 
 Object
@@ -475,16 +475,16 @@ make_procedure (Heap *heap, Object code)
 }
 
 /* TODO (XXX): Lift the assembly functions to the procedure level. */
-Object
+Assembly *
 procedure_assembly (Object proc)
 {
-  return ((Pointer) proc)[0];
+  return (Assembly *) ((Pointer) proc)[0];
 }
 
 size_t
 procedure_entry_count (Object proc)
 {
-  return assembly_entry_point_number (procedure_assembly (proc));
+  return assembly_entry_point_count (*procedure_assembly (proc));
 }
 
 Object
@@ -503,10 +503,10 @@ is_procedure (Object obj)
 Object
 make_closure (Heap *heap, Object proc, size_t slots, Object obj)
 {
-  Object assembly = procedure_assembly (proc);
-  size_t entries = assembly_entry_point_number (assembly);
-  EntryPoint *entry_points = assembly_entry_points (assembly);
-  
+  Assembly *assembly = procedure_assembly (proc);
+  size_t entries = assembly_entry_point_count (*assembly);
+  Pointer *entry_points = (Pointer *) assembly_entry_points (*assembly);
+
   object_stack_grow (&heap->stack, CLOSURE_TYPE);
   object_stack_grow (&heap->stack, (1 + slots + 2 * entries) * WORDSIZE);
   size_t offset = 2;
@@ -541,14 +541,14 @@ Object
 closure_set (Heap *heap, Object closure, size_t index, Object val)
 {
   size_t size = ((Pointer) closure) [0] / WORDSIZE;
-  mutate (heap, ((Pointer) closure) + size - index - 1, val);  
+  mutate (heap, ((Pointer) closure) + size - index - 1, val);
 }
 
 size_t
 closure_length (Object closure)
 {
   return ((Pointer) closure) [0] / WORDSIZE
-    - 1 - 2 * assembly_entry_point_number (procedure_assembly (closure_procedure (closure)));
+    - 1 - 2 * procedure_entry_count (closure_procedure (closure));
 }
 
 bool
@@ -565,7 +565,7 @@ closure_call (Vm *vm, Object closure, size_t entry_point)
 {
   void *heap_area = xaligned_alloc (0x10000, 1ULL << 20);  /* TODO(XXX): Make adaptable. */
   int res = trampoline (vm,
-			(EntryPoint) ((Pointer) closure) [2 + 2 * entry_point],
+		        (void *) ((Pointer) closure) [2 + 2 * entry_point],
 			heap_area,
 			(Pointer) closure);
   free (heap_area);
@@ -591,7 +591,7 @@ is_exact_number (Object object)
   return (object & OBJECT_TYPE_MASK) == POINTER_TYPE
     && (((Pointer) object)[-1] & HEADER_TYPE_MASK) == EXACT_NUMBER_TYPE;
 }
-  
+
 mpq_t *
 exact_number_value (Object num)
 {

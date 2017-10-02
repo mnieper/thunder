@@ -25,21 +25,23 @@
 #include "assure.h"
 #include "array.h"
 #include "common.h"
+#include "vector.h"
 #include "vmcommon.h"
 
 static void parser_init (Compiler *compiler, Parser *parser);
 static void parser_destroy (Parser *parser);
-static void parser_parse (Parser *parser);
+static void parser_parse (Parser *parser, Object code);
 static void parser_finish (Parser *parser);
 static Block *get_current_block (Parser *parser);
 static Object get_operand (Object *operands);
 static void add_cfg_edge (Parser *parser, size_t target);
+static void add_reg_use (Parser *parser, Instruction *ins, size_t reg_number);
 
-#define cfg_edge_foreach (e, s)					\
+#define cfg_edge_foreach(e, s)					\
   vector_foreach (e, CfgEdgeStack, CfgEdge, cfg_edge_stack, s)
 
-#define reg_use_foreach (e, s)					\
-  vector_foreach (u, RegUseStack, RegUse, reg_use_stack, s)
+#define reg_use_foreach(e, s)					\
+  vector_foreach (e, RegUseStack, RegUse, reg_use_stack, s)
 
 struct cfg_edge {
   Block *source;
@@ -63,19 +65,18 @@ struct parser
   Compiler *compiler;
   BlockTable *block_table;
   VariableTable *var_table;
-  CfgEdgeStack *cfg_edges;
-  RegUseStack *reg_uses;
+  CfgEdgeStack cfg_edges;
+  RegUseStack reg_uses;
+  Block *current_block;
   size_t current_instruction_number;
 };
-
-#define PROGRAM (parser->compiler.program)
 
 void parse_code (Compiler *compiler, Object code)
 {
   Parser parser;
 
   parser_init (compiler, &parser);
-  parser_parse (&parser);
+  parser_parse (&parser, code);
   parser_finish (&parser);
   parser_destroy (&parser);
 }
@@ -95,23 +96,29 @@ parser_parse_label (Parser *parser, Object *operands)
 }
 
 void
-parser_parse_source_reg (Parser *parser, Instruction *ins, Object *operands)
+parser_parse_register (Parser *parser, Instruction *ins, Object *operands)
 {
   Object reg = get_operand (operands);
   assure (is_exact_number (reg));
   add_reg_use (parser, ins, fixnum (reg));
 }
 
-void
-parser_parse_dest_reg (Parser *parser, Instruction *ins, Object *operands)
+jit_word_t
+parser_parse_immediate (Parser *parser, Object *operands)
 {
-  Object reg = get_operand (operands);
-  assure (is_exact_number (reg));
-  Variable *var = program_create_variable (PROGRAM);
+  Object imm = get_operand (operands);
+  assure (is_exact_number (imm));
+  return fixnum (imm);
+}
+
+void
+parser_define_var (Parser *parser, Instruction *ins)
+{
+  Variable *var = program_create_var (parser->compiler);
   instruction_add_dest (ins, var);
   variable_table_insert (parser->var_table,
 			 parser->current_instruction_number,
-			 var);  
+			 var);
 }
 
 static void
@@ -120,7 +127,7 @@ parser_init (Compiler *compiler, Parser *parser)
   parser->compiler = compiler;
   parser->current_instruction_number = 0;
   parser->block_table = block_table_create ();
-  parser->variable_table = variable_table_create ();
+  parser->var_table = variable_table_create ();
   cfg_edge_stack_init (&parser->cfg_edges);
   reg_use_stack_init (&parser->reg_uses);
 }
@@ -128,28 +135,28 @@ parser_init (Compiler *compiler, Parser *parser)
 static void
 parser_finish (Parser *parser)
 {
-  cfg_edge_stack_foreach (cfg_edge, parser->cfg_edges)
+  cfg_edge_foreach (cfg_edge, &parser->cfg_edges)
     {
-      Block *target = block_table_lookup (parser->block_table,
+      Block **target = block_table_lookup (parser->block_table,
 					  cfg_edge->target_number);
       assure (target != NULL);
-      program_add_cfg_edge (cfg_edge_source, target);
+      program_add_cfg_edge (cfg_edge->source, *target);
     }
 
-  reg_use_stack_forach (reg_use, parser->reg_uses)
+  reg_use_foreach (reg_use, &parser->reg_uses)
     {
-      Variable *var = variable_table_lookup (parser->var_table,
-					     reg_use->reg_number);
+      Variable **var = variable_table_lookup (parser->var_table,
+					      reg_use->reg_number);
       assure (var != NULL);
-      instruction_add_source (reg_use->ins, var);
+      instruction_add_source (reg_use->ins, *var);
     }
 }
 
 static void
 parser_destroy (Parser *parser)
-{ 
+{
   block_table_free (parser->block_table);
-  variable_table_free (parser->variable_table);
+  variable_table_free (parser->var_table);
   cfg_edge_stack_destroy (&parser->cfg_edges);
   reg_use_stack_destroy (&parser->reg_uses);
 }
@@ -165,8 +172,8 @@ parser_parse (Parser *parser, Object code)
       assure (is_pair (stmt));
       Opcode const *opcode = opcode_lookup (car (stmt));
       Block *block = get_current_block (parser);
-      opcode_parse (parser, block, opcode, cdr (stmt));
-      ++parser->instruction_number;
+      opcode_parse (parser->compiler, parser, block, opcode, cdr (stmt));
+      parser->current_instruction_number++;
     }
   assure (parser->current_block == NULL);
 }
@@ -176,10 +183,10 @@ get_current_block (Parser *parser)
 {
   if (parser->current_block == NULL)
     {
-      parser->current_block = program_add_block (PROGRAM);
+      parser->current_block = program_create_block (parser->compiler);
       block_table_insert (parser->block_table,
-			  parser->current_block,
-			  parser->current_instruction_number);
+			  parser->current_instruction_number,
+			  parser->current_block);
     }
   return parser->current_block;
 }

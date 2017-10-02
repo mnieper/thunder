@@ -37,6 +37,14 @@ program_destroy (Program *program)
   variable_list_free (program->vars);
 }
 
+Block *
+program_create_block (Compiler *compiler)
+{
+  Block *block = block_create (compiler);
+  block_list_add (compiler->program.blocks, block);
+  return block;
+}
+
 Variable *
 program_create_var (Compiler *compiler)
 {

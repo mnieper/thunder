@@ -70,7 +70,7 @@
     Array##Entry *entry = XMALLOC (Array##Entry);			\
     entry->index = index;						\
     entry->value = e;							\
-    if (hash_insert ((Hash_table *) table, entry) == NULL)		\
+    if (hash_insert ((Hash_table *) a, entry) == NULL)			\
       xalloc_die ();							\
   }
 

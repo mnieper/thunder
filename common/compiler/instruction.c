@@ -46,3 +46,13 @@ instruction_free (Instruction *ins)
   variable_list_free (ins->dests);
   variable_list_free (ins->sources);
 }
+
+void instruction_add_source (Instruction *ins, Variable *var)
+{
+  variable_list_add (ins->dests, var);
+}
+
+void instruction_add_dest (Instruction *ins, Variable *var)
+{
+  variable_list_add (ins->sources, var);
+}

@@ -29,6 +29,6 @@ void finish_compiler (void);
 
 Object compile (Heap *heap, Object code);
 
-extern int (*trampoline) (Vm *vm, void *f, void *arg);
+extern int (*trampoline) (Vm *vm, void *f, void *local_heap, void *arg);
 
 #endif /* COMPILER_H_INCLUDED */

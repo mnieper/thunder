@@ -29,7 +29,7 @@ COMPILER_SOURCES = compiler.c compiler/common.h compiler/compiler.c	\
 
 noinst_LTLIBRARIES = libvmcommon.la
 libvmcommon_la_SOURCES = $(COMPILER_SOURCES) array.h array.c		\
-	assembly.c assembly.h deque.c deque.h graph.c graph.h dump.c	\
+	assembly.c assembly.h deque.c deque.h dump.c	\
 	gc.c init.c number.c load.c object.c object-stack.c		\
 	resource.c runtime.c stack.c symbol_table.c vector.c write.c	\
 	xaligned_alloc.c reader.y scan.l deque.h stack.h vmcommon.h	\
