@@ -20,17 +20,18 @@
 #ifndef COMPILER_OPCODE_H_INCLUDED
 #define COMPILER_OPCODE_H_INCLUDED
 
-#include "block.h"
 #include "object.h"
-#include "parser.h"
 
 typedef struct opcode Opcode;
 
-void init_opcode (void );
+struct parser;
+struct block;
+
+void init_opcode (void);
 void finish_opcode (void);
 
 Opcode const* opcode_lookup (Object operator);
-static void opcode_parse (Parser *parser, Block *block, const Opcode *opcode,
-			  Object operands);
+static void opcode_parse (struct parser *parser, struct block *block,
+			  const Opcode *opcode, Object operands);
 
 #endif /* COMPILER_OPCODE_H_INCLUDED */

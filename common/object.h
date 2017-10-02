@@ -20,6 +20,8 @@
 #ifndef OBJECT_H_INCLUDED
 #define OBJECT_H_INCLUDED
 
+#include <lightning.h>
+
 typedef jit_uword_t Object;
 typedef Object*     Pointer;
 

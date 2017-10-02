@@ -40,6 +40,8 @@ static lt_dlhandle dynamic_module;
 static void open_dynamic_module ();
 static void close_dynamic_module ();
 
+static jit_pointer_t *trampoline_return;
+
 int (*trampoline) (Vm *vm, void *f, void *arg);
 
 void
@@ -81,7 +83,7 @@ init_lightning (void)
 static void
 finish_lightning (void)
 {
-  finish_jit (void);
+  finish_jit ();
 }
 
 static void
@@ -114,13 +116,13 @@ finish_trampoline (void)
 }
 
 static void
-init_module (void)
+open_dynamic_module (void)
 {
-  module = lt_dlopen (NULL);
+  dynamic_module = lt_dlopen (NULL);
 }
 
 static void
-finish_module (void)
+close_dynamic_module (void)
 {
-  lt_dlclose (module);
+  lt_dlclose (dynamic_module);
 }

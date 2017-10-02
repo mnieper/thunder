@@ -9,24 +9,34 @@
  * any later version.
  *
  * Thunder is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * General Public License for more details.
+ * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+ * or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+ * License for more details.
  *
  * Authors:
  *      Marc Nieper-Wißkirchen
  */
 
-#ifndef COMPILER_COMMON_H_INCLUDED
-#define COMPILER_COMMON_H_INCLUDED
-
-#include <stdbool.h>
+#ifdef HAVE_CONFIG_H
+# include <config.h>
+#endif
 #include <stddef.h>
 
-#include "block.h"
-#include "compiler.h"
-#include "instruction.h"
-#include "opcode.h"
-#include "parser.h"
+#include "common.h"
 
-#endif /* COMPILER_COMMON_H_INCLUDED */
+struct variable
+{
+  size_t dom_index;
+};
+
+Variable *
+variable_create (Compiler *compiler)
+{
+  Variable *var = COMPILER_ALLOC (Variable);
+  return var;
+}
+
+void
+variable_free (Variable *var)
+{
+}

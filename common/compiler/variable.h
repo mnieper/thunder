@@ -17,26 +17,21 @@
  *      Marc Nieper-Wißkirchen
  */
 
-#ifndef COMPILER_PROGRAM_H_INCLUDED
-#define COMPILER_PROGRAM_H_INCLUDED
+#ifndef COMPILER_VARIABLE_H_INCLUDED
+#define COMPILER_VARIABLE_H_INCLUDED
 
-#include "block.h"
-#include "variable.h"
+#include "list.h"
 
-typedef struct program Program;
+#define variable_foreach(v, l)					\
+  list_foreach (v, VariableList, Variable, variable_list, l)
+
+typedef struct variable Variable;
 
 struct compiler;
 
-void program_init (Program *program);
-void program_destroy (Program *program);
+Variable *variable_create (struct compiler *compiler);
+void variable_free (Variable *var);
 
-Variable *program_create_var (struct compiler *compiler);
-void program_add_cfg_edge (Block *source, Block *target);
+DEFINE_LIST(VariableList, Variable, variable_list, variable_free);
 
-struct program
-{
-  BlockList blocks;
-  VariableList vars;
-};
-
-#endif /* COMPILER_PROGRAM_H_INCLUDED */
+#endif /* COMPILER_VARIABLE_H_INCLUDES */

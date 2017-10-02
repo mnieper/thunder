@@ -25,40 +25,40 @@
 #include "hash.h"
 #include "xalloc.h"
 
-#define DEFINE_ARRAY(Array, Element, array)	\
-  struct Array;					\
-						\
-  typedef struct array##_entry Array##Entry;	\
-  struct array##_entry				\
-  {						\
-    size_t index;				\
-    Element value;				\
-  };						\
-  						\
-  static Array *					\
-  array##_create (void)					\
-  {							\
-    Hash_table *table = hash_initialize (0,		\
-					 NULL,		\
-					 array_hash,	\
-					 array_compare,	\
-					 free);		\
-    if (table == NULL)					\
-      xalloc_die ();					\
-    return (Array *) table;				\
-  }							\
-  							\
-  static void							\
-  array##_free (Array *a)					\
-  {								\
-    hash_free ((Hash_table *) a);				\
-  }								\
-  								\
+#define DEFINE_ARRAY(Array, Element, array)				\
+  typedef struct array Array;						\
+									\
+  typedef struct array##_entry Array##Entry;				\
+  struct array##_entry							\
+  {									\
+    size_t index;							\
+    Element value;							\
+  };									\
+									\
+  static Array *							\
+  array##_create (void)							\
+  {									\
+    Hash_table *table = hash_initialize (0,				\
+					 NULL,				\
+					 (Hash_hasher) array_hash,	\
+					 (Hash_comparator) array_compare, \
+					 free);				\
+    if (table == NULL)							\
+      xalloc_die ();							\
+    return (Array *) table;						\
+  }									\
+									\
+  static void								\
+  array##_free (Array *a)						\
+  {									\
+    hash_free ((Hash_table *) a);					\
+  }									\
+									\
   static Element *							\
   array##_lookup (Array *a, size_t index)				\
   {									\
     Array##Entry *entry							\
-      = (Array##Entry *) hash_lookup ((Hash_table *) table, &index);	\
+      = (Array##Entry *) hash_lookup ((Hash_table *) a, &index);	\
     if (entry == NULL)							\
       return NULL;							\
     return &entry->value;						\

@@ -25,7 +25,7 @@
 #include "obstack.h"
 #include "program.h"
 
-#define COMPILER_ALLOC (compiler, t)				\
+#define COMPILER_ALLOC(compiler, t)				\
   ((t *) (compiler_alloc ((compiler), sizeof (t))))
 
 typedef struct compiler Compiler;

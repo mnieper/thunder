@@ -24,13 +24,6 @@
 
 #include "obstack.h"
 
-typedef struct assembly Assembly[1];
-
-void assembly_init (Assembly assembly);
-void assembly_destroy (Assembly assembly);
-void assembly_clear (Assembly assembly);
-static inline jit_state_t *assembly_jit (Assembly assembly);
-
 struct assembly
 {
   jit_state_t *jit;
@@ -39,6 +32,12 @@ struct assembly
   size_t entry_point_count;
   bool clear : 1;
 };
+typedef struct assembly Assembly[1];
+
+void assembly_init (Assembly assembly);
+void assembly_destroy (Assembly assembly);
+void assembly_clear (Assembly assembly);
+static inline jit_state_t *assembly_jit (Assembly assembly);
 
 jit_state_t *
 assembly_jit (Assembly assembly)

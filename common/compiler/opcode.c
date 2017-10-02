@@ -40,6 +40,7 @@ static void opcode_table_insert (OpcodeTable *table, Object name);
 #define DECLARE_PARSER(type)						\
   static void opcode_parse_##type (Parser *parser, Block *block,	\
 				   Opcode const *opcode, Object operands);
+DECLARE_PARSER(ri)
 DECLARE_PARSER(branch_r)
 DECLARE_PARSER(jmp)
 DECLARE_PARSER(ret)
@@ -151,13 +152,22 @@ opcode_table_insert (OpcodeTable *table, Object name, Opcode *opcode)
     }						\
   while (0)
 
+DEFINE_PARSER(ri)
+{
+  Instruction *ins = block_add_instruction (block, opcode);
+  parser_parse_dest_reg (parser, ins, &operands);
+  parser_parse_source_reg (parser, ins, &operands);
+  parser_parse_immediate (parser, &operands);
+  ASSURE_NO_MORE_OPERANDS;
+}
+
 DEFINE_PARSER(branch_r)
 {
-  block_add_instruction (block, opcode);
+  Instruction *ins = block_add_instruction (block, opcode);
   parser_parse_label (parser, block, &operands);
   parser_parse_label (parser, block, &operands);
-  parser_parse_register (parser, block, &operands);
-  parser_parse_register (parser, block, &operands);
+  parser_parse_source_reg (parser, ins, &operands);
+  parser_parse_source_reg (parser, ins, &operands);
   ASSURE_NO_MORE_OPERANDS;
   parser_terminate_block (parser);
 }

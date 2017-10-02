@@ -9,16 +9,16 @@
  * your option) any later version.
  *
  * Thunder is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
- * or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
- * License for more details.
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
  *
  * Authors:
  *      Marc Nieper-Wißkirchen
  */
 
-#ifndef VECTOR2_H_INCLUDED
-#define VECTOR2_H_INCLUDED
+#ifndef VECTOR_H_INCLUDED
+#define VECTOR_H_INCLUDED
 
 #include "obstack.h"
 
@@ -109,4 +109,4 @@
        (e) != vector##_end ((v));					\
        (e)++)
 
-#endif /* VECTOR2_H_INCLUDED */
+#endif /* VECTOR_H_INCLUDED */

@@ -19,6 +19,7 @@
 
 EXPAND_OPCODE(beqr, branch_r)
 EXPAND_OPCODE(jmp, jmp)
+EXPAND_OPCODE(movi, ri)
 EXPAND_OPCODE(ret, ret)
 
 /* Local Variables: */

@@ -24,14 +24,12 @@
 #include "common.h"
 #include "list.h"
 
-DEFINE_LIST (BlockList, Block, block_list, block_free)
-
 struct block
 {
   InstructionList instructions;
   BlockList successors;
   BlockList predecessors;
-  BlockListPosition *last_instruction;
+  InstructionListPosition *last_instruction;
 };
 
 Block *
@@ -52,6 +50,18 @@ block_free (Block *block)
   instruction_list_free (block->instructions);
   block_list_free (block->successors);
   block_list_free (block->predecessors);
+}
+
+void
+block_add_successor (Block *source, Block *target)
+{
+  block_list_add (source->successors, target);
+}
+
+void
+block_add_predecessor (Block *target, Block *source)
+{
+  block_list_add (target->predecessors, source);
 }
 
 Instruction *

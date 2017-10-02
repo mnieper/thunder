@@ -6,6 +6,7 @@
 /warn-on-use.h
 /check.sh
 /test.sh
+/array
 /bitset
 /compiler
 /deque

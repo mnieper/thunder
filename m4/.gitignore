@@ -104,3 +104,5 @@
 /stdint_h.m4
 /vasnprintf.m4
 /xsize.m4
+/asm-underscore.m4
+/host-cpu-c-abi.m4
