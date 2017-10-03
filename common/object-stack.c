@@ -51,7 +51,7 @@ object_stack_destroy (ObjectStack *restrict stack)
 }
 
 void
-object_stack_grow (ObjectStack *restrict stack, Object obj)
+object_stack_grow (ObjectStack *stack, Object obj)
 {
   obstack_grow (&stack->obstack, &obj, sizeof (obj));
 }
@@ -69,16 +69,16 @@ object_stack_ucs4_grow (ObjectStack *restrict stack, ucs4_t c)
 }
 
 void
-object_stack_utf8_grow (ObjectStack *restrict stack, uint8_t *s, size_t len)
+object_stack_utf8_grow (ObjectStack *stack, uint8_t const *s, size_t len)
 {
-  obstack_grow (&stack->obstack, s, len * sizeof (uint8_t));
+  obstack_grow (&stack->obstack, (void *) s, len * sizeof (uint8_t));
 }
 
 void
 object_stack_align (ObjectStack *restrict stack)
 {
   size_t size = obstack_object_size (&stack->obstack);
-  
+
   obstack_blank (&stack->obstack, ((size + ALIGNMENT_MASK) & ~ALIGNMENT_MASK) - size);
 }
 

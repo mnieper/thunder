@@ -30,6 +30,7 @@ ASCII-compatible.  This can be fixed by using UTF-8 codes directly. */
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif
+#include <stddef.h>
 #include <gmp.h>
 #include <mpfr.h>
 #include <mpc.h>
@@ -65,9 +66,9 @@ ASCII-compatible.  This can be fixed by using UTF-8 codes directly. */
      yylloc->first_line = yylineno;					\
      yylloc->first_column = yycolumn;					\
      ucs4_t uc;								\
-     const uint8_t *s = yytext;						\
+     const uint8_t *s = (uint8_t *) yytext;				\
      int n;								\
-     while (s = u8_next (&uc, s))					\
+     while ((s = u8_next (&uc, s)) != NULL)				\
        {								\
 	 switch (uc)							\
 	   {								\
@@ -101,7 +102,8 @@ ASCII-compatible.  This can be fixed by using UTF-8 codes directly. */
                       			    iconveh_question_mark,	\
 				            mb_ptr (c),			\
 				            mb_len (c),			\
-				            NULL, buf + n, &len);	\
+				            NULL,			\
+					    (uint8_t *) buf + n, &len);	\
        if (s != (uint8_t *) buf + n)					\
           {								\
             mbf_ungetc (c, yyextra->in);                                \
@@ -115,14 +117,14 @@ ASCII-compatible.  This can be fixed by using UTF-8 codes directly. */
     if (mb_iseof (c) && ferror (yyin))					\
       YY_FATAL_ERROR ("input in flex scanner failed" );			\
     result = n;								\
-  }								       
+  }
 
 #define CHECK(expr)				\
    do {						\
      if (!(expr))				\
        return INVALID;				\
    } while (false)
-   
+
 static void
 begin_number (yyscan_t restrict scanner);
 
@@ -242,11 +244,11 @@ IDENTIFIER           {INITIAL}{SUBSEQUENT}*|{PECULIAR-IDENTIFIER}
   "."             return '.';
 
   {IDENTIFIER}/{DELIMITER} |
-  {IDENTIFIER}             { 
+  {IDENTIFIER}             {
                              obstack_init (&yylval->stack);
-                             obstack_grow (&yylval->stack, yytext, yyleng);          
+                             obstack_grow (&yylval->stack, yytext, yyleng);
 			     /* TODO: Lowercase the symbol. */
-			     return IDENTIFIER; 
+			     return IDENTIFIER;
                            }
   {IDENTIFIER}/.           return INVALID;
 
@@ -258,8 +260,9 @@ IDENTIFIER           {INITIAL}{SUBSEQUENT}*|{PECULIAR-IDENTIFIER}
 
   "#\\"{UTF8-CHAR}/{DELIMITER} |
   "#\\"{UTF8-CHAR}             {
-                                 u8_mbtouc_unsafe (&yylval->character, 
-	                          	           yytext + 2, yyleng - 2);
+                                 u8_mbtouc_unsafe (&yylval->character,
+	                          	           (uint8_t const *) yytext + 2,
+						   yyleng - 2);
 				 return CHARACTER;
                                }
 
@@ -299,7 +302,7 @@ IDENTIFIER           {INITIAL}{SUBSEQUENT}*|{PECULIAR-IDENTIFIER}
 
 <INITIAL,BINARY,OCTAL,DECIMAL,HEXADECIMAL>{
   {EXPLICIT-SIGN}{I} {
-                       mpfr_set_si (yyextra->imag, sign (yytext [0]), MPFR_RNDN); 
+                       mpfr_set_si (yyextra->imag, sign (yytext [0]), MPFR_RNDN);
 		       CHECK (set_imag (yyscanner));
                      }
 
@@ -323,12 +326,12 @@ IDENTIFIER           {INITIAL}{SUBSEQUENT}*|{PECULIAR-IDENTIFIER}
 				    mpq_canonicalize (yyextra->rational);
 				    CHECK (set_exact_imag (yyscanner));
 				  }
-  {SIGN}{DECIMAL-10}              { 
+  {SIGN}{DECIMAL-10}              {
 				    mpfr_set_str (yyextra->imag, yytext, 10, MPFR_RNDN);
 				    CHECK (set_real (yyscanner));
                                   }
   {EXPLICIT-SIGN}{DECIMAL-10}{I}  {
-                                    yytext[yyleng - 1] = '\0'; 
+                                    yytext[yyleng - 1] = '\0';
 				    mpfr_set_str (yyextra->imag, yytext, 10, MPFR_RNDN);
 				    CHECK (set_imag (yyscanner));
                                   }
@@ -343,7 +346,7 @@ IDENTIFIER           {INITIAL}{SUBSEQUENT}*|{PECULIAR-IDENTIFIER}
   {EXPLICIT-SIGN}{RATIONAL-2}{I} {
                                    yytext[yyleng - 1] = '\0';
 				   mpq_set_str (yyextra->rational, yytext, 2);
-				   mpq_canonicalize (yyextra->rational); 
+				   mpq_canonicalize (yyextra->rational);
 				   CHECK (set_exact_imag (yyscanner));
 				 }
 }
@@ -407,13 +410,13 @@ static int
 end_number (yyscan_t restrict scanner, bool eof)
 {
   YY_EXTRA_TYPE context = yyget_extra (scanner);
-  
+
   if (!context->radix)
     yy_pop_state (scanner);
 
   if (!eof && context->radix)
     return INVALID;
-  
+
   if (!context->real_found)
     return INVALID;
 
@@ -432,20 +435,20 @@ end_number (yyscan_t restrict scanner, bool eof)
       return EXACT_NUMBER;
     }
 
-  if (context->exact_prefix && mpfr_number_p (context->real) 
+  if (context->exact_prefix && mpfr_number_p (context->real)
       && (!context->imag_found || mpfr_zero_p (context->imag)))
     {
       mpq_init (lval->exact_number);
       inexact_to_exact (lval->exact_number, context->real);
       return EXACT_NUMBER;
     }
-  
+
   /* We are now in the case of an inexact complex number. */
   mpc_init2 (lval->inexact_number, 53);
 
   if (context->polar)
     {
-      mpfr_sin_cos (mpc_imagref (lval->inexact_number), mpc_realref (lval->inexact_number), 
+      mpfr_sin_cos (mpc_imagref (lval->inexact_number), mpc_realref (lval->inexact_number),
 		    context->imag, MPFR_RNDN);
       mpc_mul_fr (lval->inexact_number, lval->inexact_number, context->real, MPC_RNDNN);
     }
@@ -511,10 +514,10 @@ set_radix_prefix (yyscan_t restrict scanner, int radix)
 static bool
 set_real (yyscan_t restrict scanner)
 {
-  YY_EXTRA_TYPE context = yyget_extra (scanner); 
+  YY_EXTRA_TYPE context = yyget_extra (scanner);
 
   begin_number (scanner);
-  
+
   if (context->real_found && !context->polar)
     return false;
 
@@ -522,7 +525,7 @@ set_real (yyscan_t restrict scanner)
     {
       context->imag_found = true;
       if (context->exact)
-	{	  
+	{
 	  context->exact = false;
 	  mpfr_set_q (context->real, context->rational, MPFR_RNDN);
 	}
@@ -531,7 +534,7 @@ set_real (yyscan_t restrict scanner)
     {
       context->real_found = true;
       context->exact = false;
-      mpfr_swap (context->real, context->imag);	  
+      mpfr_swap (context->real, context->imag);
     }
 
   return true;
@@ -540,15 +543,15 @@ set_real (yyscan_t restrict scanner)
 static bool
 set_imag (yyscan_t restrict scanner)
 {
-  YY_EXTRA_TYPE context = yyget_extra (scanner); 
+  YY_EXTRA_TYPE context = yyget_extra (scanner);
 
   begin_number (scanner);
 
   if (context->imag_found || context->polar)
     return false;
-  
+
   context->imag_found = true;
-  
+
   if (!context->real_found)
     {
       mpfr_set_zero (context->real, 1);
@@ -567,10 +570,10 @@ set_imag (yyscan_t restrict scanner)
 static bool
 set_exact_real (yyscan_t restrict scanner)
 {
-  YY_EXTRA_TYPE context = yyget_extra (scanner); 
+  YY_EXTRA_TYPE context = yyget_extra (scanner);
 
   begin_number (scanner);
-  
+
   if (context->real_found && !context->polar)
     return false;
 
@@ -594,7 +597,7 @@ set_exact_real (yyscan_t restrict scanner)
 static bool
 set_exact_imag (yyscan_t restrict scanner)
 {
-  YY_EXTRA_TYPE context = yyget_extra (scanner); 
+  YY_EXTRA_TYPE context = yyget_extra (scanner);
 
   begin_number (scanner);
 
@@ -620,7 +623,11 @@ sign (char c)
 void *yyalloc (size_t bytes, yyscan_t restrict scanner) {
   return xmalloc (bytes);
 }
- 
+
 void *yyrealloc (void* ptr, size_t bytes, yyscan_t restrict scanner) {
   return xrealloc (ptr, bytes);
 }
+
+/* Local Variables: */
+/* mode: c */
+/* End: */

@@ -21,9 +21,13 @@
 #define ARRAY_H_INCLUDED
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdlib.h>
 
 #include "hash.h"
 #include "xalloc.h"
+
+size_t array_hash (size_t const *entry, size_t n);
+bool array_compare (size_t const *entry1, size_t const *entry2);
 
 #define DEFINE_ARRAY(Array, Element, array)				\
   typedef struct array Array;						\
@@ -65,16 +69,16 @@
   }									\
 									\
   static void								\
-  array##_insert (Array *a, size_t index, Element e)			\
+  array##_insert (Array *a, size_t index, Element v)			\
   {									\
     Array##Entry *entry = XMALLOC (Array##Entry);			\
     entry->index = index;						\
-    entry->value = e;							\
-    if (hash_insert ((Hash_table *) a, entry) == NULL)			\
+    Array##Entry *e = hash_insert ((Hash_table *) a, entry);		\
+    if (e == NULL)							\
       xalloc_die ();							\
+    if (e != entry)							\
+      free (entry);							\
+    e->value = v;							\
   }
-
-size_t array_hash (size_t const *entry, size_t n);
-bool array_compare (size_t const *entry1, size_t const *entry2);
 
 #endif /* ARRAY_H_INCLUDED */

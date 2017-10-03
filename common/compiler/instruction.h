@@ -21,16 +21,20 @@
 #define COMPILER_INSTRUCTION_H
 
 #include "list.h"
-#include "opcode.h"
 #include "variable.h"
 
 typedef struct instruction Instruction;
 
-Instruction *instruction_create (Compiler *compiler, Opcode const *opcode);
+struct compiler;
+struct opcode;
+struct variable;
+
+Instruction *instruction_create (struct compiler *compiler,
+				 struct opcode const *opcode);
 void instruction_free (Instruction *ins);
 
-void instruction_add_source (Instruction *ins, Variable *var);
-void instruction_add_dest (Instruction *ins, Variable *var);
+void instruction_add_source (Instruction *ins, struct variable *var);
+void instruction_add_dest (Instruction *ins, struct variable *var);
 
 DEFINE_LIST (InstructionList, Instruction, instruction_list, instruction_free)
 

@@ -39,8 +39,12 @@ void assembly_init (Assembly assembly);
 void assembly_destroy (Assembly assembly);
 void assembly_clear (Assembly assembly);
 static inline jit_state_t *assembly_jit (Assembly const assembly);
-static inline size_t assembly_entry_point_count (Assembly const assembly);
-static inline jit_pointer_t *assembly_entry_points (Assembly const assembly);
+static inline void assembly_finish (Assembly assembly);
+
+#define ASSEMBLY_ENTRY_POINT_COUNT(assembly)	\
+  ((assembly)[0].entry_point_count)
+#define ASSEMBLY_ENTRY_POINTS(assembly)		\
+  ((assembly)[0].entry_points)
 
 jit_state_t *
 assembly_jit (Assembly const assembly)
@@ -48,16 +52,10 @@ assembly_jit (Assembly const assembly)
   return assembly->jit;
 }
 
-size_t
-assembly_entry_point_count (Assembly const assembly)
+void
+assembly_finish (Assembly assembly)
 {
-  return assembly->entry_point_count;
-}
-
-jit_pointer_t *
-assembly_entry_points (Assembly const assembly)
-{
-  return assembly->entry_points;
+  assembly->clear = false;
 }
 
 #endif /* ASSEMBLY_H_INCLUDED */

@@ -370,7 +370,7 @@ string (Heap *heap, Object chars)
 }
 
 Object
-make_symbol (Heap *heap, uint8_t *s, size_t len)
+make_symbol (Heap *heap, uint8_t const *s, size_t len)
 {
   object_stack_grow (&heap->stack, SYMBOL_TYPE);
   object_stack_grow (&heap->stack, (len + 1) * sizeof (uint8_t));
@@ -484,7 +484,7 @@ procedure_assembly (Object proc)
 size_t
 procedure_entry_count (Object proc)
 {
-  return assembly_entry_point_count (*procedure_assembly (proc));
+  return ASSEMBLY_ENTRY_POINT_COUNT (*procedure_assembly (proc));
 }
 
 Object
@@ -500,12 +500,19 @@ is_procedure (Object obj)
     && (((Pointer) obj)[-1] & HEADER_TYPE_MASK) == (PROCEDURE_TYPE & HEADER_TYPE_MASK);
 }
 
+bool
+is_assembly (Object object)
+{
+  return (object & OBJECT_TYPE_MASK) == POINTER_TYPE
+    && (((Pointer) object)[-1] & HEADER_TYPE_MASK) == (ASSEMBLY_TYPE & HEADER_TYPE_MASK);
+}
+
 Object
 make_closure (Heap *heap, Object proc, size_t slots, Object obj)
 {
   Assembly *assembly = procedure_assembly (proc);
-  size_t entries = assembly_entry_point_count (*assembly);
-  Pointer *entry_points = (Pointer *) assembly_entry_points (*assembly);
+  size_t entries = ASSEMBLY_ENTRY_POINT_COUNT (*assembly);
+  Pointer *entry_points = (Pointer *) ASSEMBLY_ENTRY_POINTS (*assembly);
 
   object_stack_grow (&heap->stack, CLOSURE_TYPE);
   object_stack_grow (&heap->stack, (1 + slots + 2 * entries) * WORDSIZE);
@@ -537,7 +544,7 @@ closure_ref (Object closure, size_t index)
   return ((Pointer) closure)[size - index - 1];
 }
 
-Object
+void
 closure_set (Heap *heap, Object closure, size_t index, Object val)
 {
   size_t size = ((Pointer) closure) [0] / WORDSIZE;

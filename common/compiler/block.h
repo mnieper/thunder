@@ -17,14 +17,44 @@
  *      Marc Nieper-Wißkirchen
  */
 
-#ifndef COMPILER_BLOCK_H
-#define COMPILER_BLOCK_H
+#ifndef COMPILER_BLOCK_H_INCLUDED
+#define COMPILER_BLOCK_H_INCLUDED
 
+#include <stdbool.h>
+#include <stddef.h>
+
+#include "bitset.h"
+#include "instruction.h"
 #include "list.h"
 #include "opcode.h"
 
-#define variable_foreach(v, l)					\
-  list_foreach (v, VariableList, Variable, variable_list, l)
+#define block_foreach(b, l)					\
+  list_foreach (b, BlockList, Block, block_list, l)
+
+#define successor_foreach(succ, block)					\
+  list_foreach (succ, BlockList, Block, block_list, (block)->successors)
+
+#define predecessor_foreach(pred, block)				\
+  list_foreach (pred, BlockList, Block, block_list, (block)->predecessors)
+
+#define BLOCK_PREINDEX(block)			\
+  ((block)->preindex)
+#define BLOCK_POSTINDEX(block)			\
+  ((block)->postindex)
+#define BLOCK_DOMINDEX(block)			\
+  ((block)->domindex)
+
+#define BLOCK_IDOM(block)			\
+  ((block)->idom)
+
+#define BLOCK_LIVENESS_R(block)			\
+  ((block)->liveness_r)
+
+#define BLOCK_LIVENESS_T(block)			\
+  ((block)->liveness_t)
+
+#define BLOCK_BACK_EDGE_TARGET(block)		\
+  ((block)->back_edge_target)
 
 typedef struct block Block;
 
@@ -34,6 +64,10 @@ struct instruction;
 Block *block_create (struct compiler *compiler);
 void block_free (Block *block);
 
+static inline struct block_list block_dom_children (Block *block);
+
+bool block_root (Block *block);
+
 void block_add_successor (Block *source, Block *target);
 void block_add_predecessor (Block *target, Block *source);
 struct instruction *block_add_instruction (struct compiler *compiler,
@@ -42,4 +76,27 @@ struct instruction *block_add_instruction (struct compiler *compiler,
 
 DEFINE_LIST(BlockList, Block, block_list, block_free);
 
-#endif /* COMPILER_BLOCK_H */
+struct block
+{
+  InstructionList instructions;
+  BlockList successors;
+  BlockList predecessors;
+  BlockList dom_children;
+  InstructionListPosition *last_instruction;
+  ptrdiff_t preindex;
+  ptrdiff_t postindex;
+  ptrdiff_t domindex;
+  Block *idom;
+  Bitset* liveness_r;
+  /* TODO: Implement and use a SparseBitset for liveness_t.  */
+  Bitset* liveness_t;
+  bool back_edge_target : 1;
+};
+
+static inline BlockList
+block_dom_children (Block *block)
+{
+  return block->dom_children;
+}
+
+#endif /* COMPILER_BLOCK_H_INCLUDED */

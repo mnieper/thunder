@@ -20,49 +20,34 @@
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif
-#include <stdbool.h>
-#include <stddef.h>
 
 #include "assure.h"
 #include "common.h"
-#include "minmax.h"
-#include "vector2.h"
+#include "vector.h"
+#include "xalloc.h"
+
+static void dominance_dataflow (Program *program);
+static bool local_flow (Program *program, Block *block);
+static void init_domindexes (Program *program);
 
 DEFINE_VECTOR (Worklist, Block *, worklist)
 
 #define worklist_foreach(b, w)				\
   vector_foreach(b, Worklist, Block *, worklist, w)
 
-static void dataflow (Program *);
-static bool local_flow (Program *, Block *block);
-static void init_dom_order (Program *);
-static void init_max_dom (Program *);
-
 void
-program_init_dominance_tree (Program *program)
+program_init_dominance (Program *program)
 {
-  size_t blocks = block_count (program);
-  block_foreach (block, program)
-    /* No block can be its own immediate dominator, so we use this
+  program_block_foreach (block, program)
+     /* No block can be its own immediate dominator, so we use this
        value as a marker. */
-    block->idom = block;
+    BLOCK_IDOM (block) = block;
+  dominance_dataflow (program);
 
-  dataflow (program);
-
-  init_dom_order (program);
-
-  init_max_dom (program);
+  init_domindexes (program);
 }
 
-bool
-block_dominates (Block *block1, Block *block2)
-{
-  return (block2->dom_order_number >= block1->dom_order_number &&
-	  block2->dom_order_number <= block1->max_dom_number);
-}
-
-static void
-dataflow (Program *program)
+static void dominance_dataflow (Program *program)
 {
   Worklist old_worklist, new_worklist, tmp_worklist;
   worklist_init (&old_worklist);
@@ -85,6 +70,7 @@ dataflow (Program *program)
 
   worklist_destroy (&old_worklist);
   worklist_destroy (&new_worklist);
+
 }
 
 static bool
@@ -92,7 +78,7 @@ local_flow (Program *program, Block *block)
 {
   if (block_root (block))
     {
-      block->idom = NULL;
+      BLOCK_IDOM (block) = NULL;
       return false;
     }
 
@@ -106,68 +92,53 @@ local_flow (Program *program, Block *block)
 	  new_idom = pred;
 	  continue;
 	}
-      Block *idom2 = pred->idom;
-      size_t number1 = new_idom->reverse_postorder_number;
-      size_t number2 = idom2->reverse_postorder_number;
+      Block *idom2 = BLOCK_IDOM (pred);
+      size_t number1 = BLOCK_POSTINDEX (new_idom);
+      size_t number2 = BLOCK_POSTINDEX (idom2);
       while (new_idom != idom2)
 	{
 	  while (idom2 != NULL
-		 && number1 < (number2 = idom2->reverse_postorder_number))
-	    idom2 = idom2->idom;
+		 && number1 < (number2 = BLOCK_POSTINDEX (idom2)))
+	    idom2 = BLOCK_IDOM (idom2);
 	  while (new_idom != NULL
-		 && number2 < (number1 = new_idom->reverse_postorder_number))
-	    new_idom = new_idom->idom;
+		 && number2 < (number1 = BLOCK_POSTINDEX (new_idom)))
+	    new_idom = BLOCK_IDOM (new_idom);
 	}
     }
-  if (block->idom == new_idom)
+  if (BLOCK_IDOM (block) == new_idom)
     return false;
-  block->idom = new_idom;
+  BLOCK_IDOM (block) = new_idom;
   return true;
 }
 
 static void
-init_dom_order (Program *program)
+init_domindexes (Program *program)
 {
   Worklist worklist;
   worklist_init (&worklist);
 
-  block_foreach (block, program)
+  program_block_foreach (block, program)
     {
-      if (block->idom != NULL)
-	block_list_add (block->idom->dom_children, block);
+      if (BLOCK_IDOM (block) != NULL)
+	block_list_add (block_dom_children (BLOCK_IDOM (block)), block);
       else
 	worklist_push (&worklist, &block);
     }
 
   size_t blocks = block_count (program);
-  program->dom_order = XNMALLOC (blocks, Block *);
+  PROGRAM_DOMORDER (program) = XNMALLOC (blocks, Block *);
 
-  size_t dom_order_number = 0;
+  size_t domindex = 0;
   Block **block;
   while ((block = worklist_pop (&worklist)) != NULL)
     {
-      program->dom_order[dom_order_number] = *block;
-      (*block)->dom_order_number = dom_order_number++;
+      PROGRAM_DOMORDER (program)[domindex] = *block;
+      BLOCK_DOMINDEX (*block) = domindex++;
 
       dom_child_foreach (child, *block)
 	worklist_push (&worklist, &child);
     }
-  assure (dom_order_number == blocks);
+  assure (domindex == blocks);
 
   worklist_destroy (&worklist);
-}
-
-static void
-init_max_dom (Program *program)
-{
-  block_foreach (block, program)
-    block->max_dom_number = block->dom_order_number;
-
-  postorder_foreach (block, program)
-    {
-      Block *idom = block->idom;
-      if (idom != NULL)
-	idom->max_dom_number = MAX (idom->max_dom_number,
-				    block->max_dom_number);
-    }
 }

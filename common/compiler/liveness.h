@@ -17,19 +17,10 @@
  *      Marc Nieper-Wißkirchen
  */
 
-#ifndef COMPILER_COMMON_H_INCLUDED
-#define COMPILER_COMMON_H_INCLUDED
+#ifndef COMPILER_LIVENESS_H_INCLUDED
+#define COMPILER_LIVENESS_H_INCLUDED
 
-#include <stdbool.h>
-#include <stddef.h>
+void
+program_init_liveness (Program *program);
 
-#include "block.h"
-#include "compiler.h"
-#include "dfs.h"
-#include "dominance.h"
-#include "instruction.h"
-#include "liveness.h"
-#include "opcode.h"
-#include "parser.h"
-
-#endif /* COMPILER_COMMON_H_INCLUDED */
+#endif /* COMPILER_LIVENESS_H_INCLUDED */

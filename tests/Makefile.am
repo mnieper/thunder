@@ -34,30 +34,17 @@ LOG_COMPILER = $(LIBTOOL) --mode=execute $(VALGRIND)	\
 TST_LOG_COMPILER = ./check.sh
 TESTS_ENVIRONMENT = @LOCALCHARSET_TESTS_ENVIRONMENT@
 
-check_PROGRAMS = program compiler array bitset deque graph image	\
+check_PROGRAMS = compiler array bitset deque image	\
 	number object symbol_table reader runtime stack vector write	\
-	gc compiler2
-
-compiler2_SOURCES = compiler2.c ../common/set.h common/list.h	\
-	common/vector2.h ../common/compiler2/program.c		\
-	../common/compiler2/dfs.c ../common/compiler2/common.h	\
-	../common/compiler2/dominance.c				\
-	../common/compiler2/liveness.c				\
-	../common/compiler2/instruction.c			\
-	../common/compiler2/ssa-destruction.c			\
-	../common/bitset.c		\
-	../common/bitset.h
-compiler2_LDADD = $(top_builddir)/lib/libgnu.la
-
-program_SOURCES = program.c program.h
+	gc
 
 compiler_SOURCES = compiler.c macros.h
+
+array_SOURCES = array.c
 
 bitset_SOURCES = bitset.c
 
 deque_SOURCES = deque.c macros.h
-
-graph_SOURCES = graph.c macros.h
 
 image_SOURCES = image.c macros.h
 

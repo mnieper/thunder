@@ -65,7 +65,7 @@
   static inline size_t							\
   list##_size (List l)							\
   {									\
-    gl_list_size (l.gl_list);						\
+    return gl_list_size (l.gl_list);					\
   }									\
 									\
   static inline Element *						\

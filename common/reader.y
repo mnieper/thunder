@@ -44,7 +44,7 @@
 #include "xalloc.h"
 
 #define HEAP (yyget_extra (scanner)->heap)
-  
+
 #define YYLTYPE struct location
 
 #define obstack_chunk_alloc xmalloc
@@ -84,7 +84,7 @@ struct context
   mpq_t rational;
   mpfr_t real;
   mpfr_t imag;
-  union 
+  union
   {
     struct
     {
@@ -190,7 +190,7 @@ inexact_number: INEXACT_NUMBER
               ;
 
 list: '(' ')'
-        {  
+        {
 	  $$ = make_null ();
 	}
     | '(' datum tail
@@ -198,11 +198,11 @@ list: '(' ')'
 	  $$ = cons (HEAP, $2, $3);
 	}
     ;
-	  
+
 string: STRING
              {
 	       size_t n = obstack_object_size (&$1);
-	       uint8_t *s = obstack_finish (&$1);	       
+	       uint8_t *s = obstack_finish (&$1);
 	       size_t len = u8_mbsnlen (s, n);
 	       $$ = make_string (yyget_extra (scanner)->heap, len, 0);
 	       len *= sizeof (ucs4_t);
@@ -216,8 +216,8 @@ symbol: IDENTIFIER /* XXX: Rename identifier to symbol (?) */
 	       uint8_t *s = obstack_finish (&$1);
 	       $$ = make_symbol (yyget_extra (scanner)->heap, s, n);
 	       obstack_free (&$1, NULL);
-	     }			 
-	       
+	     }
+
 vector: "#(" elements ')'
           {
 	    Object *elements = obstack_finish (&$2.stack);
@@ -315,7 +315,7 @@ parse_symbol (uint8_t const *bytes, size_t length)
   struct context context;
   context_init (&context, NULL, 0, true, NULL);
   yylex_init_extra (&context, &scanner);
-  YY_BUFFER_STATE buffer = yy_scan_bytes (bytes, length, scanner);
+  YY_BUFFER_STATE buffer = yy_scan_bytes ((char const *) bytes, length, scanner);
   yyset_debug (yydebug, scanner);
   int res = yyparse (scanner);
   if (res == 2)
@@ -325,7 +325,7 @@ parse_symbol (uint8_t const *bytes, size_t length)
   context_destroy (&context);
   return res == 0;
 }
-  
+
 Object
 read_number (Heap *heap, uint8_t const *bytes, size_t length, int radix)
 {
@@ -333,7 +333,7 @@ read_number (Heap *heap, uint8_t const *bytes, size_t length, int radix)
   struct context context;
   context_init (&context, heap, radix, false, NULL);
   yylex_init_extra (&context, &scanner);
-  YY_BUFFER_STATE buffer = yy_scan_bytes (bytes, length, scanner);
+  YY_BUFFER_STATE buffer = yy_scan_bytes ((char const *) bytes, length, scanner);
   yyset_debug (yydebug, scanner);
   int res = yyparse (scanner);
   if (res == 2)
@@ -353,7 +353,7 @@ read_number (Heap *heap, uint8_t const *bytes, size_t length, int radix)
 void
 reader_init (Reader *restrict reader, Heap *heap, FILE *in)
 {
-  
+
   Context context = XMALLOC (struct context);
   context_init (context, heap, 0, false, in);
   yylex_init_extra (context, &reader->scanner);

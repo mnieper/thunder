@@ -20,6 +20,7 @@
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif
+#include <stdbool.h>
 
 #include "array.h"
 
@@ -30,5 +31,5 @@ size_t array_hash (size_t const *entry, size_t n)
 
 bool array_compare (size_t const *entry1, size_t const *entry2)
 {
-  return entry1 == entry2;
+  return *entry1 == *entry2;
 }

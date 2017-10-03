@@ -23,6 +23,7 @@
 #include <lightning.h>
 #include <ltdl.h>
 
+#include "assure.h"
 #include "compiler/common.h"
 #include "progname.h"
 #include "vmcommon.h"
@@ -69,8 +70,36 @@ compile (Heap *heap, Object code)
   compiler_init (&compiler);
 
   parse_code (&compiler, code);
+  program_init_dfs (&compiler.program);
+  program_init_dominance (&compiler.program);
+  program_init_liveness (&compiler.program);
+
+  size_t entry_point_count = 1; /* XXX */
+  assure (entry_point_count > 0);
+
+  Resource(ASSEMBLY) *res
+    = resource_manager_allocate (ASSEMBLY, &heap->resource_manager);
+
+#define assembly (RESOURCE_PAYLOAD (res))
+  assembly_clear (assembly);
+
+#define _jit (assembly_jit (assembly))
+  jit_prolog ();
+  jit_tramp (FRAME_SIZE);
+  jit_epilog ();
+  jit_emit ();
+  jit_clear_state ();
+#undef _jit
+
+  ASSEMBLY_ENTRY_POINT_COUNT (assembly) = entry_point_count;
+  ASSEMBLY_ENTRY_POINTS (assembly)
+    = XNMALLOC (entry_point_count, jit_pointer_t);
+  assembly_finish (assembly);
+#undef assembly
 
   compiler_destroy (&compiler);
+
+  return (Object) res | POINTER_TYPE;
 }
 
 static void

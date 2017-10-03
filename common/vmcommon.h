@@ -140,7 +140,7 @@ void object_stack_destroy (ObjectStack *stack);
 void object_stack_grow (ObjectStack *stack, Object obj);
 void object_stack_grow0 (ObjectStack *stack);
 void object_stack_ucs4_grow (ObjectStack *stack, ucs4_t c);
-void object_stack_utf8_grow (ObjectStack *stack, uint8_t *s, size_t len);
+void object_stack_utf8_grow (ObjectStack *stack, uint8_t const *s, size_t len);
 void object_stack_align (ObjectStack *stack);
 Object object_stack_finish (ObjectStack *stack);
 
@@ -169,7 +169,7 @@ symbol_table_destroy (SymbolTable *restrict symbol_table);
 Object
 symbol_table_intern (SymbolTable *restrict symbol_table, Object sym, bool gc);
 
-Object
+void
 symbol_table_clear (SymbolTable *restrict symbol_table, bool major_gc);
 
 
@@ -379,7 +379,7 @@ Object
 string (Heap *heap, Object chars);
 
 Object
-make_symbol (Heap *heap, uint8_t *s, size_t len);
+make_symbol (Heap *heap, uint8_t const *s, size_t len);
 
 bool
 is_symbol (Object obj);
@@ -441,8 +441,11 @@ procedure_entry_count (Object proc);
 Object
 procedure_code (Object proc);
 
-  bool
+bool
 is_procedure (Object obj);
+
+bool
+is_assembly (Object obj);
 
 Object
 make_closure (Heap *heap, Object proc, size_t slots, Object obj);
@@ -459,7 +462,7 @@ closure_procedure (Object closure);
 Object
 closure_ref (Object closure, size_t index);
 
-Object
+void
 closure_set (Heap *heap, Object closure, size_t index, Object val);
 
 int

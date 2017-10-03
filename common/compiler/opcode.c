@@ -167,7 +167,6 @@ opcode_table_insert (OpcodeTable *table, Object name, Opcode *opcode)
 DEFINE_PARSER(ri)
 {
   Instruction *ins = block_add_instruction (compiler, block, opcode);
-  parser_parse_register (parser, ins, &operands);
   parser_parse_immediate (parser, &operands);
   ASSURE_NO_MORE_OPERANDS;
   parser_define_var (parser, ins);
@@ -194,8 +193,8 @@ DEFINE_PARSER(jmp)
 
 DEFINE_PARSER(ret)
 {
-  block_add_instruction (compiler, block, opcode);
-  // TODO: Add RETURN register
+  Instruction *ins = block_add_instruction (compiler, block, opcode);
+  parser_parse_register (parser, ins, &operands);
   ASSURE_NO_MORE_OPERANDS;
   parser_terminate_block (parser);
 }

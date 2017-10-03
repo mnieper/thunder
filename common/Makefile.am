@@ -22,10 +22,13 @@ BUILT_SOURCES = reader.h scan.c
 
 COMPILER_SOURCES = compiler.c compiler/common.h compiler/compiler.c	\
 	compiler/compiler.h compiler/block.c compiler/block.h		\
-	compiler/instruction.c compiler/instruction.h			\
-	compiler/opcodes.def compiler/parser.c compiler/parser.h	\
-	compiler/opcode.c compiler/opcode.h compiler/program.c		\
-	compiler/program.h compiler/variable.c compiler/variable.h
+	compiler/dfs.c compiler/dfs.h compiler/dominance.c		\
+	compiler/dominance.h compiler/instruction.c			\
+	compiler/instruction.h compiler/liveness.c			\
+	compiler/liveness.h compiler/opcodes.def compiler/parser.c	\
+	compiler/parser.h compiler/opcode.c compiler/opcode.h		\
+	compiler/program.c compiler/program.h compiler/variable.c	\
+	compiler/variable.h
 
 noinst_LTLIBRARIES = libvmcommon.la
 libvmcommon_la_SOURCES = $(COMPILER_SOURCES) array.h array.c		\
@@ -34,7 +37,7 @@ libvmcommon_la_SOURCES = $(COMPILER_SOURCES) array.h array.c		\
 	resource.c runtime.c stack.c symbol_table.c vector.c write.c	\
 	xaligned_alloc.c reader.y scan.l deque.h stack.h vmcommon.h	\
 	vector.c vector.h set.h list.c list.h set.h set.c bitset.c	\
-	bitset.h heap.h object.h
+	bitset.h heap.h object.h version-etc-copyright.c
 libvmcommon_la_CPPFLAGS = -I$(top_builddir)/lib			\
 	-I$(top_srcdir)/include -I$(top_srcdir)/lightning/include
 libvmcommon_la_LIBADD = $(LIBLTDL) $(LTLIBINTL) $(LTLIBICONV)	\

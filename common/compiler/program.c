@@ -28,6 +28,9 @@ program_init (Program *program)
 {
   program->blocks = block_list_create (true);
   program->vars = variable_list_create (true);
+  edge_vector_init (&program->back_edges);
+  program->preorder = NULL;
+  program->postorder = NULL;
 }
 
 void
@@ -35,6 +38,15 @@ program_destroy (Program *program)
 {
   block_list_free (program->blocks);
   variable_list_free (program->vars);
+  edge_vector_destroy (&program->back_edges);
+  free (program->preorder);
+  free (program->postorder);
+}
+
+size_t
+block_count (Program *program)
+{
+  return block_list_size (program->blocks);
 }
 
 Block *

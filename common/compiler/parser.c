@@ -125,6 +125,7 @@ static void
 parser_init (Compiler *compiler, Parser *parser)
 {
   parser->compiler = compiler;
+  parser->current_block = 0;
   parser->current_instruction_number = 0;
   parser->block_table = block_table_create ();
   parser->var_table = variable_table_create ();

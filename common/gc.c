@@ -81,8 +81,10 @@ heap_init (Heap *heap, size_t heap_size)
   resource_manager_init (&heap->resource_manager);
   object_stack_init (&heap->stack);
   flip (heap);
-#define EXPAND_SYMBOL(id, name)			\
-  symbols[SYMBOL_##id] = make_symbol (heap, name, strlen (name));
+#define EXPAND_SYMBOL(id, name)						\
+  symbols[SYMBOL_##id] = make_symbol (heap,				\
+				      (uint8_t const *) name,		\
+				      strlen (name));
 # include "symbols.def"
 #undef EXPAND_SYMBOL
 }

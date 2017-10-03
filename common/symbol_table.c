@@ -34,12 +34,12 @@ static size_t
 hasher (void const *entry, size_t table_size)
 {
   return hash_pjw_bare (symbol_bytes ((Object) entry),
-			symbol_length ((Object) entry) * sizeof (uint8_t)) % table_size;  
+			symbol_length ((Object) entry) * sizeof (uint8_t)) % table_size;
 }
 
 static bool
 comparator (void const *entry1, void const *entry2)
-{  
+{
   size_t len = symbol_length ((Object) entry1);
   if (len != (symbol_length ((Object) entry2)))
     return false;
@@ -56,7 +56,7 @@ ObjectStack symbol_stack;
 Object symbols[SYMBOL_COUNT];
 
 static Object
-make_well_known_symbol (uint8_t *s)
+make_well_known_symbol (uint8_t const *s)
 {
   size_t len = u8_strlen (s);
   object_stack_grow (&symbol_stack, SYMBOL_TYPE | WELL_KNOWN_SYMBOL);
@@ -77,9 +77,9 @@ void init_symbols (void)
     xalloc_die ();
 
   object_stack_init (&symbol_stack);
-  
+
 #define EXPAND_SYMBOL(id, name)				\
-  symbols[SYMBOL_##id] = make_well_known_symbol (name);
+  symbols[SYMBOL_##id] = make_well_known_symbol ((uint8_t const *) name);
 # include "symbols.def"
 #undef EXPAND_SYMBOL
 }
@@ -107,7 +107,7 @@ symbol_table_destroy (SymbolTable *restrict symbol_table)
   hash_free (symbol_table->heap_table);
 }
 
-Object
+void
 symbol_table_clear (SymbolTable *restrict symbol_table, bool major_gc)
 {
   hash_clear (symbol_table->nursery_table);
@@ -127,7 +127,7 @@ symbol_table_intern (SymbolTable *restrict symbol_table, Object sym, bool gc)
   Object old = (Object) hash_lookup (well_known_symbols, (void *) sym);
   if ((void *) old != NULL)
     return old;
-  
+
   Hash_table *restrict table;
   if (gc)
     table = symbol_table->heap_table;

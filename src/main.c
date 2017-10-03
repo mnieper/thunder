@@ -89,7 +89,7 @@ int main (int argc, char *argv[])
 
   if (optind == argc)
     error (EXIT_FAILURE, 0, "%s", "no input file");
-  
+
   char const *filename = argv [optind];
   src = fopen (filename, "r");
   if (src == NULL)
@@ -104,7 +104,7 @@ int main (int argc, char *argv[])
     }
   else
     rewind (src);
-  
+
   vm_init ();
   vm = vm_create ();
   atexit (free_vm);
@@ -123,7 +123,7 @@ print_help (FILE *out)
   fputs ("\n", out);
   fprintf (out, "Report bugs to: %s\n", PACKAGE_BUGREPORT);
   fprintf (out, "%s home page: <%s>\n", PACKAGE_NAME, PACKAGE_URL);
-  
+
   exit (out == stderr ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 

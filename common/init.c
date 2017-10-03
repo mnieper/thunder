@@ -32,10 +32,9 @@ static bool initialized = false;
 static void
 finish (void)
 {
-  lt_dlexit ();
-  
   finish_compiler ();
   finish_symbols ();
+  lt_dlexit ();
 }
 
 void
@@ -47,9 +46,9 @@ init (void)
   LTDL_SET_PRELOADED_SYMBOLS ();
   if (lt_dlinit () != 0)
     error (EXIT_FAILURE, 0, "%s", lt_dlerror ());
-  
+
   init_symbols ();
-  init_compiler ();  
+  init_compiler ();
 
   initialized = true;
   atexit (finish);

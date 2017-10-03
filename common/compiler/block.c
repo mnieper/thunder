@@ -24,14 +24,6 @@
 #include "common.h"
 #include "list.h"
 
-struct block
-{
-  InstructionList instructions;
-  BlockList successors;
-  BlockList predecessors;
-  InstructionListPosition *last_instruction;
-};
-
 Block *
 block_create (Compiler *compiler)
 {
@@ -40,6 +32,8 @@ block_create (Compiler *compiler)
   block->instructions = instruction_list_create (true);
   block->successors = block_list_create (false);
   block->predecessors = block_list_create (false);
+  block->dom_children = block_list_create (false);
+  block->back_edge_target = false;
 
   return block;
 }
@@ -50,6 +44,13 @@ block_free (Block *block)
   instruction_list_free (block->instructions);
   block_list_free (block->successors);
   block_list_free (block->predecessors);
+  block_list_free (block->dom_children);
+}
+
+bool
+block_root (Block *block)
+{
+  return block_list_size (block->predecessors) == 0;
 }
 
 void
