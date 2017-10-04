@@ -21,7 +21,12 @@
 # include <config.h>
 #endif
 
+#include "assure.h"
 #include "common.h"
+
+#ifdef DEBUG
+# include <stdio.h>
+#endif
 
 void
 program_init (Program *program)
@@ -29,10 +34,6 @@ program_init (Program *program)
   program->blocks = block_list_create (true);
   program->vars = variable_list_create (true);
   edge_vector_init (&program->back_edges);
-  // TODO(XXX): Allocate these using the compiler stack.
-  program->preorder = NULL;
-  program->postorder = NULL;
-  program->domorder = NULL;
 }
 
 void
@@ -41,9 +42,6 @@ program_destroy (Program *program)
   block_list_free (program->blocks);
   variable_list_free (program->vars);
   edge_vector_destroy (&program->back_edges);
-  free (program->preorder);
-  free (program->postorder);
-  free (program->domorder);
 }
 
 size_t
@@ -74,3 +72,25 @@ program_add_cfg_edge (Block *source, Block *target)
   block_add_successor (source, target);
   block_add_predecessor (target, source);
 }
+
+#ifdef DEBUG
+void
+program_dump (Program *program, char const *path)
+{
+  FILE *out = fopen (path, "w");
+  assure (out != NULL);
+  program_block_foreach (block, program)
+    {
+      block_out_str (out, block);
+      fprintf (out, "\n");
+    }
+  program_variable_foreach (var, program)
+    {
+      fprintf (out, "VARIABLE (domindex=%tu, congruence=%tu)",
+	       VARIABLE_INDEX (var),
+	       VARIABLE_INDEX (VARIABLE_CONGRUENCE (var)));
+      fprintf (out, "\n");
+    }
+  fclose (out);
+}
+#endif

@@ -24,19 +24,18 @@
 
 #include "common.h"
 
-struct variable
-{
-  size_t dom_index;
-};
-
 Variable *
 variable_create (Compiler *compiler)
 {
   Variable *var = COMPILER_ALLOC (compiler, Variable);
+  use_chain_init (variable_use_chain (var));
+  variable_vector_init (variable_congruence_class (var));
   return var;
 }
 
 void
 variable_free (Variable *var)
 {
+  use_chain_destroy (variable_use_chain (var));
+  variable_vector_destroy (variable_congruence_class (var));
 }

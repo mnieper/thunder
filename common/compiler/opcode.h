@@ -22,6 +22,10 @@
 
 #include "object.h"
 
+#ifdef DEBUG
+# include <stdio.h>
+#endif
+
 typedef struct opcode Opcode;
 
 struct compiler;
@@ -35,5 +39,9 @@ Opcode const* opcode_lookup (Object operator);
 void opcode_parse (struct compiler *compiler, struct parser *parser,
 		   struct block *block, const Opcode *opcode, Object operands);
 Opcode const* get_opcode_movr (void);
+
+#ifdef DEBUG
+void opcode_out_str (FILE *out, Opcode const *opcode);
+#endif
 
 #endif /* COMPILER_OPCODE_H_INCLUDED */

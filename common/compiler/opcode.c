@@ -29,6 +29,11 @@
 #include "vmcommon.h"
 #include "xalloc.h"
 
+#ifdef DEBUG
+# include <stdio.h>
+# include <stdlib.h>
+#endif
+
 typedef struct opcode_table OpcodeTable;
 
 static OpcodeTable *opcode_table_create ();
@@ -43,11 +48,16 @@ static void opcode_table_insert (OpcodeTable *table, Object name,
   static void opcode_parse_##type (Compiler *compiler, Parser *parser,	\
 				   Block *block, Opcode const *opcode,	\
 				   Object operands);
+DECLARE_PARSER(r)
 DECLARE_PARSER(ri)
 DECLARE_PARSER(rr)
+DECLARE_PARSER(rri)
+DECLARE_PARSER(rrr)
+DECLARE_PARSER(branch_i)
 DECLARE_PARSER(branch_r)
 DECLARE_PARSER(jmp)
 DECLARE_PARSER(ret)
+DECLARE_PARSER(phi)
 #undef DECLARE_PARSER
 
 static OpcodeTable *opcodes;
@@ -90,6 +100,13 @@ finish_opcode (void)
 Opcode const *
 opcode_lookup (Object name)
 {
+#ifdef DEBUG
+  {
+    char *s = object_get_str (name);
+    fprintf (stderr, "VM: looking up opcode: %s\n", s);
+    free (s);
+  }
+#endif
   Opcode const *opcode = opcode_table_lookup (opcodes, name);
   assure (opcode != NULL);
   return opcode;
@@ -155,6 +172,13 @@ opcode_table_lookup (OpcodeTable *table, Object name)
 static void
 opcode_table_insert (OpcodeTable *table, Object name, Opcode *opcode)
 {
+#ifdef DEBUG
+  {
+    char *s = object_get_str (name);
+    fprintf (stderr, "VM: defining opcode: %s\n", s);
+    free (s);
+  }
+#endif
   opcode->name = name;
   if (hash_insert ((Hash_table *) table, opcode) == NULL)
     xalloc_die ();
@@ -171,6 +195,12 @@ opcode_table_insert (OpcodeTable *table, Object name, Opcode *opcode)
     }						\
   while (0)
 
+DEFINE_PARSER(r)
+{
+  Instruction *ins = block_add_instruction (compiler, block, opcode);
+  ASSURE_NO_MORE_OPERANDS;
+  parser_define_var (parser, ins);
+}
 DEFINE_PARSER(ri)
 {
   Instruction *ins = block_add_instruction (compiler, block, opcode);
@@ -185,6 +215,35 @@ DEFINE_PARSER(rr)
   parser_parse_register (parser, ins, &operands);
   ASSURE_NO_MORE_OPERANDS;
   parser_define_var (parser, ins);
+}
+
+DEFINE_PARSER(rri)
+{
+  Instruction *ins = block_add_instruction (compiler, block, opcode);
+  parser_parse_register (parser, ins, &operands);
+  parser_parse_immediate (parser, &operands);
+  ASSURE_NO_MORE_OPERANDS;
+  parser_define_var (parser, ins);
+}
+
+DEFINE_PARSER(rrr)
+{
+  Instruction *ins = block_add_instruction (compiler, block, opcode);
+  parser_parse_register (parser, ins, &operands);
+  parser_parse_register (parser, ins, &operands);
+  ASSURE_NO_MORE_OPERANDS;
+  parser_define_var (parser, ins);
+}
+
+DEFINE_PARSER(branch_i)
+{
+  Instruction *ins = block_add_instruction (compiler, block, opcode);
+  parser_parse_label (parser, &operands);
+  parser_parse_label (parser, &operands);
+  parser_parse_register (parser, ins, &operands);
+  parser_parse_immediate (parser, &operands);
+  ASSURE_NO_MORE_OPERANDS;
+  parser_terminate_block (parser);
 }
 
 DEFINE_PARSER(branch_r)
@@ -214,5 +273,22 @@ DEFINE_PARSER(ret)
   parser_terminate_block (parser);
 }
 
+DEFINE_PARSER(phi)
+{
+  Instruction *phi = block_add_phi_func (compiler, block, opcode);
+  while (!is_null (operands))
+    parser_parse_register (parser, phi, &operands);
+  parser_define_var (parser, phi);
+}
+
 #undef ASSURE_NO_MORE_OPERANDS
 #undef DEFINE_PARSER
+
+#ifdef DEBUG
+void opcode_out_str (FILE *out, Opcode const *opcode)
+{
+  char *s = object_get_str (opcode->name);
+  fprintf (out, "%s", s);
+  free (s);
+}
+#endif

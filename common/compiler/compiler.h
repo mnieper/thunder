@@ -27,6 +27,8 @@
 
 #define COMPILER_ALLOC(compiler, t)				\
   ((t *) (compiler_alloc ((compiler), sizeof (t))))
+#define COMPILER_NALLOC(compiler, n, t)		\
+  ((t *) (compiler_alloc ((compiler), n * sizeof (t))))
 
 typedef struct compiler Compiler;
 

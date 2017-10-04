@@ -23,12 +23,9 @@
 
 #include "common.h"
 
-struct instruction
-{
-  Opcode const *opcode;
-  VariableList dests;
-  VariableList sources;
-};
+#ifdef DEBUG
+# include <stdio.h>
+#endif
 
 Instruction *
 instruction_create (Compiler *compiler, Opcode const *opcode)
@@ -47,12 +44,46 @@ instruction_free (Instruction *ins)
   variable_list_free (ins->sources);
 }
 
-void instruction_add_source (Instruction *ins, Variable *var)
+Variable *instruction_dest (Instruction *ins)
+{
+  return variable_list_first (ins->dests);
+}
+
+void
+instruction_add_source (Instruction *ins, Variable *var)
+{
+  variable_list_add (ins->sources, var);
+}
+
+void
+instruction_add_dest (Instruction *ins, Variable *var)
 {
   variable_list_add (ins->dests, var);
 }
 
-void instruction_add_dest (Instruction *ins, Variable *var)
+void
+instruction_set_dest (Instruction *ins, struct variable *var)
 {
-  variable_list_add (ins->sources, var);
+  variable_list_set_first (ins->dests, var);
 }
+
+void
+instruction_replace_source (Instruction *ins, VariableListPosition *pos,
+			    Variable *var)
+{
+  variable_list_replace (ins->sources, pos, var);
+}
+
+#ifdef DEBUG
+void
+instruction_out_str (FILE *out, Instruction *ins)
+{
+  dest_foreach (var, ins)
+    fprintf (out, "%zu ", VARIABLE_INDEX (var));
+  fprintf (out, "<- ");
+  opcode_out_str (out, ins->opcode);
+  source_foreach (var, ins)
+    fprintf (out, " %zu", VARIABLE_INDEX (var));
+  fprintf (out, "\n");
+}
+#endif

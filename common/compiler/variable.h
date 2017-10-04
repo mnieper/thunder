@@ -21,6 +21,7 @@
 #define COMPILER_VARIABLE_H_INCLUDED
 
 #include "list.h"
+#include "vector.h"
 
 #define variable_foreach(v, l)					\
   list_foreach (v, VariableList, Variable, variable_list, l)
@@ -32,6 +33,46 @@ struct compiler;
 Variable *variable_create (struct compiler *compiler);
 void variable_free (Variable *var);
 
+static inline struct use_chain *variable_use_chain (Variable *var);
+static inline struct variable_vector *
+variable_congruence_class (Variable *var);
+
+#define VARIABLE_INDEX(var)      ((var)->varindex)
+#define VARIABLE_DEF_BLOCK(var)  ((var)->def_block)
+#define VARIABLE_DEF_TIME(var)   ((var)->def_time)
+#define VARIABLE_CONGRUENCE(var) ((var)->congruence)
+
 DEFINE_LIST(VariableList, Variable, variable_list, variable_free);
+
+typedef struct use Use;
+struct use {
+  struct block *block;
+  size_t last_use_time;
+};
+DEFINE_VECTOR (UseChain, Use, use_chain)
+
+DEFINE_VECTOR (VariableVector, Variable *, variable_vector)
+
+struct variable
+{
+  size_t varindex;
+  struct block *def_block;
+  size_t def_time;
+  UseChain use_chain;
+  Variable *congruence;
+  VariableVector congruence_class;
+};
+
+static inline UseChain *
+variable_use_chain (Variable *var)
+{
+  return &var->use_chain;
+}
+
+inline struct variable_vector *
+variable_congruence_class (Variable *var)
+{
+  return &var->congruence_class;
+}
 
 #endif /* COMPILER_VARIABLE_H_INCLUDES */

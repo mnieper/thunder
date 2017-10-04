@@ -70,10 +70,13 @@ compile (Heap *heap, Object code)
   compiler_init (&compiler);
 
   parse_code (&compiler, code);
-  program_init_dfs (&compiler.program);
-  program_init_dominance (&compiler.program);
+  program_init_dfs (&compiler);
+  program_init_dominance (&compiler);
   program_init_liveness (&compiler.program);
   program_convert_out_of_ssa (&compiler);
+#ifdef DEBUG
+  program_dump (&compiler.program, "program.txt");
+#endif
 
   size_t entry_point_count = 1; /* XXX */
   assure (entry_point_count > 0);

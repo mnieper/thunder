@@ -29,6 +29,9 @@
 #define program_block_foreach(block, program)	\
   block_foreach (block, (program)->blocks)
 
+#define program_variable_foreach(var, program)	\
+  variable_foreach (var, (program)->vars)
+
 typedef struct program Program;
 
 struct compiler;
@@ -42,6 +45,10 @@ static inline struct edge_vector *program_back_edges (Program *program);
 Variable *program_create_var (struct compiler *compiler);
 Block *program_create_block (struct compiler *compiler);
 void program_add_cfg_edge (Block *source, Block *target);
+
+#ifdef DEBUG
+void program_dump (Program *program, char const *path);
+#endif
 
 #define PROGRAM_PREORDER(program)		\
   ((program)->preorder)

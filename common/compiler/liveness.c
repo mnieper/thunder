@@ -25,6 +25,8 @@
 #include "bitset.h"
 #include "common.h"
 
+static void add_use (Block *block, Variable *var, size_t time);
+static void add_def (Block *block, Variable *var, size_t varindex, size_t time);
 static void init_liveness_r (Program *program);
 static void init_liveness_t (Program *program);
 
@@ -33,6 +35,54 @@ program_init_liveness (Program *program)
 {
   init_liveness_r (program);
   init_liveness_t (program);
+}
+
+void
+program_init_def_use_chains (Program *program)
+{
+  size_t varindex = 0;
+  size_t time = 0;
+  domorder_foreach (block, program)
+    {
+      phi_foreach (phi, block)
+	{
+	  source_foreach (var, phi)
+	    add_use (block, var, time);
+	  dest_foreach (var, phi)
+	    add_def (block, var, varindex++, time + 1);
+	}
+      time++;
+      block_instruction_foreach (ins, block)
+	{
+	  source_foreach (var, ins)
+	    add_use (block, var, time);
+	  time++;
+	  dest_foreach (var, ins)
+	    add_def (block, var, varindex++, time);
+	}
+    }
+}
+
+static void
+add_use (Block *block, Variable *var, size_t time)
+{
+  UseChain *uses = variable_use_chain (var);
+
+  Use *use = use_chain_top (uses);
+  if (use == NULL || use->block != block)
+    {
+      use_chain_push (uses, &(Use) { .block = block });
+      use = use_chain_top (uses);
+    }
+  use->last_use_time = time;
+}
+
+static void
+add_def (Block *block, Variable *var, size_t varindex, size_t time)
+{
+  VARIABLE_DEF_BLOCK (var) = block;
+  VARIABLE_INDEX (var) = varindex;
+  VARIABLE_DEF_TIME (var) = time;
 }
 
 static void

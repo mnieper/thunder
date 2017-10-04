@@ -23,4 +23,7 @@
 void
 program_init_liveness (Program *program);
 
+void
+program_init_def_use_chains (Program *program);
+
 #endif /* COMPILER_LIVENESS_H_INCLUDED */

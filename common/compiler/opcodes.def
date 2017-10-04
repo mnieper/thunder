@@ -17,11 +17,17 @@
  *      Marc Nieper-Wißkirchen
  */
 
+EXPAND_OPCODE(beqi, branch_i)
 EXPAND_OPCODE(beqr, branch_r)
+EXPAND_OPCODE(in, r)
 EXPAND_OPCODE(jmp, jmp)
 EXPAND_OPCODE(movi, ri)
 EXPAND_OPCODE(movr, rr)
+EXPAND_OPCODE(mulr, rrr)
+EXPAND_OPCODE(phi, phi)
 EXPAND_OPCODE(ret, ret)
+EXPAND_OPCODE(subi, rri)
+EXPAND_OPCODE(subr, rrr)
 
 /* Local Variables: */
 /* mode: c */

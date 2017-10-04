@@ -28,14 +28,22 @@
 #include "list.h"
 #include "opcode.h"
 
+#ifdef DEBUG
+# include <stdio.h>
+#endif
+
 #define block_foreach(b, l)					\
   list_foreach (b, BlockList, Block, block_list, l)
 
 #define successor_foreach(succ, block)					\
-  list_foreach (succ, BlockList, Block, block_list, (block)->successors)
+  block_foreach (succ, (block)->successors)
+#define predecessor_foreach(pred, block)					\
+  block_foreach (pred, (block)->predecessors)
 
-#define predecessor_foreach(pred, block)				\
-  list_foreach (pred, BlockList, Block, block_list, (block)->predecessors)
+#define phi_foreach(phi, block)			\
+  instruction_foreach (phi, (block)->phis)
+#define block_instruction_foreach(ins, block)	\
+  instruction_foreach (ins, (block)->instructions)
 
 #define BLOCK_PREINDEX(block)			\
   ((block)->preindex)
@@ -71,6 +79,9 @@ bool block_root (Block *block);
 
 void block_add_successor (Block *source, Block *target);
 void block_add_predecessor (Block *target, Block *source);
+struct instruction *block_add_phi_func (struct compiler *compiler,
+					Block *block,
+					const Opcode *opcode);
 struct instruction *block_add_instruction (struct compiler *compiler,
 					   Block *block,
 					   const Opcode *opcode);
@@ -82,11 +93,16 @@ struct instruction *block_add_instruction_before (struct compiler *compiler,
 						  InstructionListPosition *pos,
 						  const Opcode *opcode);
 
+#ifdef DEBUG
+void block_out_str (FILE *out, Block *block);
+#endif
+
 DEFINE_LIST(BlockList, Block, block_list, block_free);
 
 struct block
 {
   InstructionList instructions;
+  InstructionList phis;
   BlockList successors;
   BlockList predecessors;
   BlockList dom_children;

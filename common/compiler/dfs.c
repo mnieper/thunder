@@ -32,19 +32,21 @@ static void clear_visited_blocks (Program *program);
 static bool block_visited (Block *block);
 static void init_back_edges (Program *program);
 
-void
-program_init_dfs (Program *program)
-{
-  clear_visited_blocks (program);
+#define PROGRAM (&(compiler)->program)
 
-  size_t blocks = block_count (program);
-  PROGRAM_PREORDER (program) = XNMALLOC (blocks, Block *);
-  PROGRAM_POSTORDER (program) = XNMALLOC (blocks, Block *);
+void
+program_init_dfs (Compiler *compiler)
+{
+  clear_visited_blocks (PROGRAM);
+
+  size_t blocks = block_count (PROGRAM);
+  PROGRAM_PREORDER (PROGRAM) = COMPILER_NALLOC (compiler, blocks, Block *);
+  PROGRAM_POSTORDER (PROGRAM) = COMPILER_NALLOC (compiler, blocks, Block *);
 
   Worklist worklist;
   worklist_init (&worklist);
 
-  program_block_foreach (block, program)
+  program_block_foreach (block, PROGRAM)
     if (block_root (block))
       worklist_push (&worklist, &block);
 
@@ -55,13 +57,13 @@ program_init_dfs (Program *program)
       Block **block = worklist_top (&worklist);
       if (block_visited (*block))
 	{
-	  PROGRAM_POSTORDER (program)[--postindex] = *block;
+	  PROGRAM_POSTORDER (PROGRAM)[--postindex] = *block;
 	  BLOCK_POSTINDEX (*block) = postindex;
 	  worklist_pop (&worklist);
 	}
       else
 	{
-	  PROGRAM_PREORDER (program)[preindex] = *block;
+	  PROGRAM_PREORDER (PROGRAM)[preindex] = *block;
 	  BLOCK_PREINDEX (*block) = preindex++;
 	  successor_foreach (succ, *block)
 	    if (!block_visited (succ))
@@ -73,7 +75,7 @@ program_init_dfs (Program *program)
 
   worklist_destroy (&worklist);
 
-  init_back_edges (program);
+  init_back_edges (PROGRAM);
 }
 
 bool

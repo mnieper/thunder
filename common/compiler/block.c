@@ -29,6 +29,7 @@ block_create (Compiler *compiler)
 {
   Block *block = COMPILER_ALLOC (compiler, Block);
 
+  block->phis = instruction_list_create (true);
   block->instructions = instruction_list_create (true);
   block->successors = block_list_create (false);
   block->predecessors = block_list_create (false);
@@ -43,6 +44,7 @@ block_create (Compiler *compiler)
 void
 block_free (Block *block)
 {
+  instruction_list_free (block->phis);
   instruction_list_free (block->instructions);
   block_list_free (block->successors);
   block_list_free (block->predecessors);
@@ -67,6 +69,14 @@ void
 block_add_predecessor (Block *target, Block *source)
 {
   block_list_add (target->predecessors, source);
+}
+
+Instruction *
+block_add_phi_func (Compiler *compiler, Block *block, const Opcode *opcode)
+{
+  Instruction *phi = instruction_create (compiler, opcode);
+  instruction_list_add (block->phis, phi);
+  return phi;
 }
 
 Instruction *
@@ -95,3 +105,19 @@ struct instruction *block_add_instruction_before (struct compiler *compiler,
   instruction_list_add_before (block->instructions, pos, ins);
   return ins;
 }
+
+#ifdef DEBUG
+
+void
+block_out_str (FILE *out, Block *block){
+  fprintf (out, "BLOCK (preindex=%tu, postindex=%tu, domindex=%tu)\n",
+	   block->preindex, block->postindex, block->domindex);
+  phi_foreach (phi, block)
+    instruction_out_str (out, phi);
+  block_instruction_foreach (ins, block)
+    instruction_out_str (out, ins);
+  successor_foreach (succ, block)
+    fprintf (out, "Successor: %tu\n", succ->preindex);
+}
+
+#endif

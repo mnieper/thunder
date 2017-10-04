@@ -23,6 +23,18 @@
 #include "list.h"
 #include "variable.h"
 
+#ifdef DEBUG
+# include <stdio.h>
+#endif
+
+#define instruction_foreach(i, l)					\
+  list_foreach (i, InstructionList, Instruction, instruction_list, l)
+
+#define dest_foreach(var, ins)			\
+  variable_foreach (var, (ins)->dests)
+#define source_foreach(var, ins)		\
+  variable_foreach (var, (ins)->sources)
+
 typedef struct instruction Instruction;
 
 struct compiler;
@@ -33,9 +45,25 @@ Instruction *instruction_create (struct compiler *compiler,
 				 struct opcode const *opcode);
 void instruction_free (Instruction *ins);
 
+Variable *instruction_dest (Instruction *ins);
+
 void instruction_add_source (Instruction *ins, struct variable *var);
 void instruction_add_dest (Instruction *ins, struct variable *var);
+void instruction_set_dest (Instruction *ins, struct variable *var);
+void instruction_replace_source (Instruction *ins, VariableListPosition *pos,
+				 Variable *var);
+
+#ifdef DEBUG
+void instruction_out_str (FILE *out, Instruction *ins);
+#endif
 
 DEFINE_LIST (InstructionList, Instruction, instruction_list, instruction_free)
+
+struct instruction
+{
+  struct opcode const *opcode;
+  VariableList dests;
+  VariableList sources;
+};
 
 #endif /* COMPILER_INSTRUCTION_H */

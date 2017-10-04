@@ -28,23 +28,25 @@
 
 static void dominance_dataflow (Program *program);
 static bool local_flow (Program *program, Block *block);
-static void init_domindexes (Program *program);
+static void init_domindexes (Compiler *compiler);
 
 DEFINE_VECTOR (Worklist, Block *, worklist)
 
 #define worklist_foreach(b, w)				\
   vector_foreach(b, Worklist, Block *, worklist, w)
 
+#define PROGRAM (&(compiler)->program)
+
 void
-program_init_dominance (Program *program)
+program_init_dominance (Compiler *compiler)
 {
-  program_block_foreach (block, program)
+  program_block_foreach (block, PROGRAM)
      /* No block can be its own immediate dominator, so we use this
        value as a marker. */
     BLOCK_IDOM (block) = block;
-  dominance_dataflow (program);
+  dominance_dataflow (PROGRAM);
 
-  init_domindexes (program);
+  init_domindexes (compiler);
 }
 
 static void dominance_dataflow (Program *program)
@@ -112,12 +114,12 @@ local_flow (Program *program, Block *block)
 }
 
 static void
-init_domindexes (Program *program)
+init_domindexes (Compiler *compiler)
 {
   Worklist worklist;
   worklist_init (&worklist);
 
-  program_block_foreach (block, program)
+  program_block_foreach (block, PROGRAM)
     {
       if (BLOCK_IDOM (block) != NULL)
 	block_list_add (block_dom_children (BLOCK_IDOM (block)), block);
@@ -125,14 +127,14 @@ init_domindexes (Program *program)
 	worklist_push (&worklist, &block);
     }
 
-  size_t blocks = block_count (program);
-  PROGRAM_DOMORDER (program) = XNMALLOC (blocks, Block *);
+  size_t blocks = block_count (PROGRAM);
+  PROGRAM_DOMORDER (PROGRAM) = COMPILER_NALLOC (compiler, blocks, Block *);
 
   size_t domindex = 0;
   Block **block;
   while ((block = worklist_pop (&worklist)) != NULL)
     {
-      PROGRAM_DOMORDER (program)[domindex] = *block;
+      PROGRAM_DOMORDER (PROGRAM)[domindex] = *block;
       BLOCK_DOMINDEX (*block) = domindex++;
 
       dom_child_foreach (child, *block)

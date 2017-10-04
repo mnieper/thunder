@@ -48,7 +48,7 @@
 
 struct program;
 
-void program_init_dfs (struct program *program);
+void program_init_dfs (struct compiler *compiler);
 
 bool program_back_edge (Block *source, Block *target);
 
