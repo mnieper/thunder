@@ -44,6 +44,7 @@ static void opcode_table_insert (OpcodeTable *table, Object name,
 				   Block *block, Opcode const *opcode,	\
 				   Object operands);
 DECLARE_PARSER(ri)
+DECLARE_PARSER(rr)
 DECLARE_PARSER(branch_r)
 DECLARE_PARSER(jmp)
 DECLARE_PARSER(ret)
@@ -99,6 +100,12 @@ opcode_parse (Compiler *compiler, Parser *parser, Block *block,
 	      const Opcode *opcode, Object operands)
 {
   opcode->parse (compiler, parser, block, opcode, operands);
+}
+
+Opcode const*
+get_opcode_movr (void)
+{
+  return &opcode_movr;
 }
 
 static OpcodeTable *
@@ -168,6 +175,14 @@ DEFINE_PARSER(ri)
 {
   Instruction *ins = block_add_instruction (compiler, block, opcode);
   parser_parse_immediate (parser, &operands);
+  ASSURE_NO_MORE_OPERANDS;
+  parser_define_var (parser, ins);
+}
+
+DEFINE_PARSER(rr)
+{
+  Instruction *ins = block_add_instruction (compiler, block, opcode);
+  parser_parse_register (parser, ins, &operands);
   ASSURE_NO_MORE_OPERANDS;
   parser_define_var (parser, ins);
 }

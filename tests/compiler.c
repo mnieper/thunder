@@ -24,34 +24,43 @@
 #include <locale.h>
 #include <stdio.h>
 
-#include "assert.h"
-#include "localcharset.h"
-#include "macros.h"
-#include "uniconv.h"
-#include "unitypes.h"
+#include "assure.h"
 #include "vmcommon.h"
 
 static Heap heap;
 
 Object
-read_string (char const *b)
+read_object (char const *path)
 {
-  char *s = u8_strconv_to_encoding ((uint8_t const *) b, locale_charset (),
-				    iconveh_question_mark);
-  FILE *in = fmemopen (s, strlen (s), "r");
+  FILE *in = fopen (path, "r");
+  assure (in != NULL);
 
   Reader reader;
   reader_init (&reader, &heap, in);
 
+  Object pair = make_null ();
+  Object last_pair;
   Object obj;
-  assert (reader_read (&reader, &obj, NULL, NULL));
+
+  for (; reader_read (&reader, &obj, NULL, NULL), !is_eof_object (obj); )
+    {
+      if (is_null (pair))
+	{
+	  pair = cons (&heap, obj, make_null ());
+	  last_pair = pair;
+	}
+      else
+	{
+	  set_cdr (&heap, last_pair, cons (&heap, obj, make_null ()));
+	  last_pair = cdr (last_pair);
+	}
+    }
 
   reader_destroy (&reader);
 
   fclose (in);
-  free (s);
 
-  return obj;
+  return pair;
 }
 
 int
@@ -61,12 +70,10 @@ main (void)
 
   heap_init (&heap, 1ULL << 16);
 
-  Object code = read_string
-    (u8"((movi 42)\n"
-     u8" (ret 0))\n");
+  Object code = read_object ("tests/fact.ssa");
 
-  //  Object obj = compile (&heap, code);
-  //ASSERT (is_assembly (obj));
+  Object obj = compile (&heap, code);
+  assure (is_assembly (obj));
 
   heap_destroy (&heap);
 }

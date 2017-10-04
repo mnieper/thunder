@@ -43,18 +43,18 @@
   ((block)->postindex)
 #define BLOCK_DOMINDEX(block)			\
   ((block)->domindex)
-
 #define BLOCK_IDOM(block)			\
   ((block)->idom)
-
 #define BLOCK_LIVENESS_R(block)			\
   ((block)->liveness_r)
-
 #define BLOCK_LIVENESS_T(block)			\
   ((block)->liveness_t)
-
 #define BLOCK_BACK_EDGE_TARGET(block)		\
   ((block)->back_edge_target)
+#define BLOCK_MOVE_IN(block)			\
+  ((block)->move_in)
+#define BLOCK_MOVE_OUT(block)			\
+  ((block)->move_out)
 
 typedef struct block Block;
 
@@ -65,6 +65,7 @@ Block *block_create (struct compiler *compiler);
 void block_free (Block *block);
 
 static inline struct block_list block_dom_children (Block *block);
+static inline InstructionListPosition *block_terminating (Block *block);
 
 bool block_root (Block *block);
 
@@ -73,6 +74,13 @@ void block_add_predecessor (Block *target, Block *source);
 struct instruction *block_add_instruction (struct compiler *compiler,
 					   Block *block,
 					   const Opcode *opcode);
+struct instruction *block_add_instruction_first (struct compiler *compiler,
+						 Block *block,
+						 const Opcode *opcode);
+struct instruction *block_add_instruction_before (struct compiler *compiler,
+						  Block *block,
+						  InstructionListPosition *pos,
+						  const Opcode *opcode);
 
 DEFINE_LIST(BlockList, Block, block_list, block_free);
 
@@ -83,6 +91,8 @@ struct block
   BlockList predecessors;
   BlockList dom_children;
   InstructionListPosition *last_instruction;
+  Instruction *move_in;
+  Instruction *move_out;
   ptrdiff_t preindex;
   ptrdiff_t postindex;
   ptrdiff_t domindex;
@@ -97,6 +107,12 @@ static inline BlockList
 block_dom_children (Block *block)
 {
   return block->dom_children;
+}
+
+static inline InstructionListPosition *
+block_terminating (Block *block)
+{
+  return block->last_instruction;
 }
 
 #endif /* COMPILER_BLOCK_H_INCLUDED */

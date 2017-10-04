@@ -33,6 +33,8 @@ block_create (Compiler *compiler)
   block->successors = block_list_create (false);
   block->predecessors = block_list_create (false);
   block->dom_children = block_list_create (false);
+  block->liveness_r = NULL;
+  block->liveness_t = NULL;
   block->back_edge_target = false;
 
   return block;
@@ -45,6 +47,8 @@ block_free (Block *block)
   block_list_free (block->successors);
   block_list_free (block->predecessors);
   block_list_free (block->dom_children);
+  bitset_free (block->liveness_r);
+  bitset_free (block->liveness_t);
 }
 
 bool
@@ -70,5 +74,24 @@ block_add_instruction (Compiler *compiler, Block *block, const Opcode *opcode)
 {
   Instruction *ins = instruction_create (compiler, opcode);
   block->last_instruction = instruction_list_add (block->instructions, ins);
+  return ins;
+}
+
+struct instruction *block_add_instruction_first (struct compiler *compiler,
+						 Block *block,
+						 const Opcode *opcode)
+{
+  Instruction *ins = instruction_create (compiler, opcode);
+  instruction_list_add_first (block->instructions, ins);
+  return ins;
+}
+
+struct instruction *block_add_instruction_before (struct compiler *compiler,
+						  Block *block,
+						  InstructionListPosition *pos,
+						  const Opcode *opcode)
+{
+  Instruction *ins = instruction_create (compiler, opcode);
+  instruction_list_add_before (block->instructions, pos, ins);
   return ins;
 }

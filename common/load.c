@@ -85,7 +85,7 @@ Object
 load_object (Heap *heap, Hash_table *obj_table, Object expr, Location *loc, char const *filename)
 {
   enum frame_type { FRAME_PAIR, FRAME_VECTOR, FRAME_CODE, FRAME_CLOSURE };
-  
+
   struct frame
   {
     enum frame_type type;
@@ -96,11 +96,11 @@ load_object (Heap *heap, Hash_table *obj_table, Object expr, Location *loc, char
     size_t depth;
     struct frame *prev;
   };
-  
+
   struct frame *top = NULL;
 
   size_t depth = 0; /* used for quasiquotation */
-  
+
   do
     {
       /* TODO: Simplify logic. */
@@ -179,7 +179,7 @@ load_object (Heap *heap, Hash_table *obj_table, Object expr, Location *loc, char
 	      frame->index = 0;
 	      frame->prev = top;
 	      frame->depth = depth;
-	      top = frame;	      
+	      top = frame;
 	    }
 	  else if (op == SYMBOL(CLOSURE))
 	    {
@@ -209,7 +209,7 @@ load_object (Heap *heap, Hash_table *obj_table, Object expr, Location *loc, char
       while (top != NULL)
 	{
 	  depth = top->depth;
-   
+
 	  if (top->index > 0)
 	    {
 	      switch (top->type)
@@ -288,10 +288,10 @@ load_object (Heap *heap, Hash_table *obj_table, Object expr, Location *loc, char
 	      break;
 	    }
 	}
-      
+
     }
   while (top != NULL);
-  
+
   return expr;
 }
 
@@ -300,10 +300,10 @@ checked_read (Reader *reader, Location *loc, char const *filename)
 {
   Object expr;
   char const *msg;
-  
+
   if (!(reader_read (reader, &expr, loc, &msg)))
     error_at_line (EXIT_FAILURE, 0, filename, loc->first_line, "%s", msg);
-  
+
   return expr;
 }
 
@@ -313,13 +313,13 @@ load (Heap *heap, FILE *in, char const *filename)
   Hash_table *obj_table = hash_initialize (0, NULL, hasher, comparator, free);
   if (obj_table == NULL)
     xalloc_die ();
-  
+
   Object expr;
-  
+
   Reader reader;
   reader_init (&reader, heap, in);
   Location loc;
-  
+
   while (!is_eof_object (expr = checked_read (&reader, &loc, filename)))
     {
       if (is_pair (expr))
@@ -327,9 +327,9 @@ load (Heap *heap, FILE *in, char const *filename)
 	  if (!is_list (cdr (expr)))
 	    error_at_line (EXIT_FAILURE, 0, filename, loc.first_line,
 			   "dotted pair in source: %s", object_get_str (expr));
-	  
+
 	  Object op = car (expr);
-	  
+
 	  if (op == SYMBOL(DEFINE))
 	    {
 	      Object id = cadr (expr);
@@ -341,7 +341,7 @@ load (Heap *heap, FILE *in, char const *filename)
 	      if (entry == NULL)
 		error_at_line (EXIT_FAILURE, 0, filename, loc.first_line,
 			       "multiple definition for: %s", object_get_str (id));
-	      
+
 	      entry->obj = load_object (heap, obj_table, car (cddr (expr)), &loc, filename);
 
 	      continue;
@@ -354,7 +354,7 @@ load (Heap *heap, FILE *in, char const *filename)
 	      if (!is_symbol (id))
 		error_at_line (EXIT_FAILURE, 0, filename, loc.first_line,
 			       "can't set a non-variable: %s", object_get_str (id));
-	      
+
 	      struct entry *entry = lookup (obj_table, id);
 	      if (entry == NULL)
 		error_at_line (EXIT_FAILURE, 0, filename, loc.first_line,
@@ -366,7 +366,7 @@ load (Heap *heap, FILE *in, char const *filename)
 
 	      set_car (heap, entry->obj, load_object (heap, obj_table, car (cddr (expr)),
 						      &loc, filename));
-	      
+
 	      continue;
 	    }
 
@@ -376,7 +376,7 @@ load (Heap *heap, FILE *in, char const *filename)
 	      if (!is_symbol (id))
 		error_at_line (EXIT_FAILURE, 0, filename, loc.first_line,
 			       "can't set a non-variable: %s", object_get_str (id));
-	      
+
 	      struct entry *entry = lookup (obj_table, id);
 	      if (entry == NULL)
 		error_at_line (EXIT_FAILURE, 0, filename, loc.first_line,
@@ -388,17 +388,17 @@ load (Heap *heap, FILE *in, char const *filename)
 
 	      set_cdr (heap, entry->obj, load_object (heap, obj_table, car (cddr (expr)),
 						      &loc, filename));
-	      
+
 	      continue;
 	    }
-	      
+
 	  if (op == SYMBOL(VECTOR_SET))
 	    {
 	      Object id = cadr (expr);
 	      if (!is_symbol (id))
 		error_at_line (EXIT_FAILURE, 0, filename, loc.first_line,
 			       "can't set a non-variable: %s", object_get_str (id));
-	      
+
 	      struct entry *entry = lookup (obj_table, id);
 	      if (entry == NULL)
 		error_at_line (EXIT_FAILURE, 0, filename, loc.first_line,
@@ -413,11 +413,11 @@ load (Heap *heap, FILE *in, char const *filename)
 	      if (!is_exact_number (index))
 		error_at_line (EXIT_FAILURE, 0, filename, loc.first_line,
 			       "not an exact number: %s", object_get_str (index));
-	      
+
 	      vector_set (heap, entry->obj, fixnum (index),
 			  load_object (heap, obj_table, cadr (cddr (expr)),
 				       &loc, filename));
-	      
+
 	      continue;
 	    }
 
@@ -427,7 +427,7 @@ load (Heap *heap, FILE *in, char const *filename)
 	      if (!is_symbol (id))
 		error_at_line (EXIT_FAILURE, 0, filename, loc.first_line,
 			       "can't set a non-variable: %s", object_get_str (id));
-	      
+
 	      struct entry *entry = lookup (obj_table, id);
 	      if (entry == NULL)
 		error_at_line (EXIT_FAILURE, 0, filename, loc.first_line,
@@ -442,19 +442,19 @@ load (Heap *heap, FILE *in, char const *filename)
 	      if (!is_exact_number (index))
 		error_at_line (EXIT_FAILURE, 0, filename, loc.first_line,
 			       "not an exact number: %s", object_get_str (index));
-	      
+
 	      closure_set (heap, entry->obj, fixnum (index),
 			   load_object (heap, obj_table, cadr (cddr (expr)),
 					&loc, filename));
-	      
+
 	      continue;
 	    }
 	}
-      
+
       expr = load_object (heap, obj_table, expr, &loc, filename);
       break;
     }
-  
+
   reader_destroy (&reader);
 
   hash_free (obj_table);

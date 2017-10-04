@@ -31,5 +31,6 @@
 #include "liveness.h"
 #include "opcode.h"
 #include "parser.h"
+#include "ssa-destruction.h"
 
 #endif /* COMPILER_COMMON_H_INCLUDED */

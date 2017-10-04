@@ -38,7 +38,7 @@ check_PROGRAMS = compiler array bitset deque image	\
 	number object symbol_table reader runtime stack vector write	\
 	gc
 
-compiler_SOURCES = compiler.c macros.h
+compiler_SOURCES = compiler.c
 
 array_SOURCES = array.c
 
@@ -85,6 +85,6 @@ check.sh: Makefile.am
 	echo "$(LIBTOOL) --mode=execute $(VALGRIND) $(THUNDER) \"\$$1\" 2>&1 | grep -q \"\`cat \$$(basename \"\$$1\" .tst).ok\`\"" > $@
 	chmod a+x $@
 
-EXTRA_DIST = $(base_TESTS) $(base_TESTS:.tst=.ok)
+EXTRA_DIST = $(base_TESTS) $(base_TESTS:.tst=.ok) fact.ssa
 
 CLEANFILES = $(check_SCRIPTS)

@@ -27,8 +27,9 @@ COMPILER_SOURCES = compiler.c compiler/common.h compiler/compiler.c	\
 	compiler/instruction.h compiler/liveness.c			\
 	compiler/liveness.h compiler/opcodes.def compiler/parser.c	\
 	compiler/parser.h compiler/opcode.c compiler/opcode.h		\
-	compiler/program.c compiler/program.h compiler/variable.c	\
-	compiler/variable.h
+	compiler/program.c compiler/program.h				\
+	compiler/ssa-destruction.c compiler/ssa-destruction.h		\
+	compiler/variable.c compiler/variable.h
 
 noinst_LTLIBRARIES = libvmcommon.la
 libvmcommon_la_SOURCES = $(COMPILER_SOURCES) array.h array.c		\

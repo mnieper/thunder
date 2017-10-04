@@ -1,0 +1,6 @@
+(movi 42)
+(ret 0)
+
+;; Local Variables:
+;; mode: scheme
+;; End:

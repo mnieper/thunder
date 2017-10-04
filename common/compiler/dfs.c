@@ -39,7 +39,7 @@ program_init_dfs (Program *program)
 
   size_t blocks = block_count (program);
   PROGRAM_PREORDER (program) = XNMALLOC (blocks, Block *);
-  PROGRAM_PREORDER (program) = XNMALLOC (blocks, Block *);
+  PROGRAM_POSTORDER (program) = XNMALLOC (blocks, Block *);
 
   Worklist worklist;
   worklist_init (&worklist);

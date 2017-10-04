@@ -285,7 +285,7 @@ IDENTIFIER           {INITIAL}{SUBSEQUENT}*|{PECULIAR-IDENTIFIER}
   (?i:"#\\space")             yylval->character = ' '; return CHARACTER;
   (?i:"#\\space")/.           return INVALID;
 
-  ";".
+  ";".*
 
   \" obstack_init (&yylval->stack); yy_push_state (SC_STRING, yyscanner);
 

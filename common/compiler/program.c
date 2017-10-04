@@ -29,8 +29,10 @@ program_init (Program *program)
   program->blocks = block_list_create (true);
   program->vars = variable_list_create (true);
   edge_vector_init (&program->back_edges);
+  // TODO(XXX): Allocate these using the compiler stack.
   program->preorder = NULL;
   program->postorder = NULL;
+  program->domorder = NULL;
 }
 
 void
@@ -41,6 +43,7 @@ program_destroy (Program *program)
   edge_vector_destroy (&program->back_edges);
   free (program->preorder);
   free (program->postorder);
+  free (program->domorder);
 }
 
 size_t

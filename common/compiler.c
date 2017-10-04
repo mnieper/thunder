@@ -73,6 +73,7 @@ compile (Heap *heap, Object code)
   program_init_dfs (&compiler.program);
   program_init_dominance (&compiler.program);
   program_init_liveness (&compiler.program);
+  program_convert_out_of_ssa (&compiler);
 
   size_t entry_point_count = 1; /* XXX */
   assure (entry_point_count > 0);
