@@ -20,10 +20,17 @@
 #ifndef COMPILER_LIVENESS_H_INCLUDED
 #define COMPILER_LIVENESS_H_INCLUDED
 
-void
-program_init_liveness (Program *program);
+#include <stddef.h>
 
-void
-program_init_def_use_chains (Program *program);
+#include "variable.h"
+
+#define use_foreach(use, var)						\
+  vector_foreach (use, UseChain, Use, use_chain, variable_use_chain (var))
+
+void program_init_liveness (struct program *program);
+void program_init_def_use_chains (struct program *program);
+
+bool variable_live_at (struct program *program, struct block *block,
+		       size_t time, struct variable *v);
 
 #endif /* COMPILER_LIVENESS_H_INCLUDED */

@@ -22,6 +22,7 @@
 #endif
 #include <stddef.h>
 
+#include "assure.h"
 #include "common.h"
 
 Variable *
@@ -38,4 +39,17 @@ variable_free (Variable *var)
 {
   use_chain_destroy (variable_use_chain (var));
   variable_vector_destroy (variable_congruence_class (var));
+}
+
+bool
+variable_def_dominates (Variable *v, Variable *w)
+{
+  assure (v != NULL);
+  assure (w != NULL);
+
+  if (block_dominates (VARIABLE_DEF_BLOCK (v), VARIABLE_DEF_BLOCK (w)))
+    return true;
+  if (VARIABLE_DEF_BLOCK (v) != VARIABLE_DEF_BLOCK (w))
+    return false;
+  return VARIABLE_DEF_TIME (v) <= VARIABLE_DEF_TIME (w);
 }

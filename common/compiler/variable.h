@@ -37,6 +37,8 @@ static inline struct use_chain *variable_use_chain (Variable *var);
 static inline struct variable_vector *
 variable_congruence_class (Variable *var);
 
+bool variable_def_dominates (Variable *v, Variable *w);
+
 #define VARIABLE_INDEX(var)      ((var)->varindex)
 #define VARIABLE_DEF_BLOCK(var)  ((var)->def_block)
 #define VARIABLE_DEF_TIME(var)   ((var)->def_time)

@@ -92,6 +92,8 @@
   static inline Element *					\
   vector##_top (Vector *v)					\
   {								\
+    if (vector##_empty (v))					\
+      return NULL;						\
     return vector##_end (v) - 1;				\
   }								\
   								\

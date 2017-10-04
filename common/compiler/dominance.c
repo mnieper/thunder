@@ -23,12 +23,14 @@
 
 #include "assure.h"
 #include "common.h"
+#include "minmax.h"
 #include "vector.h"
 #include "xalloc.h"
 
 static void dominance_dataflow (Program *program);
 static bool local_flow (Program *program, Block *block);
 static void init_domindexes (Compiler *compiler);
+static void init_max_domindexes (Program *program);
 
 DEFINE_VECTOR (Worklist, Block *, worklist)
 
@@ -47,6 +49,7 @@ program_init_dominance (Compiler *compiler)
   dominance_dataflow (PROGRAM);
 
   init_domindexes (compiler);
+  init_max_domindexes (PROGRAM);
 }
 
 static void dominance_dataflow (Program *program)
@@ -113,7 +116,7 @@ local_flow (Program *program, Block *block)
   return true;
 }
 
-static void
+void
 init_domindexes (Compiler *compiler)
 {
   Worklist worklist;
@@ -143,4 +146,19 @@ init_domindexes (Compiler *compiler)
   assure (domindex == blocks);
 
   worklist_destroy (&worklist);
+}
+
+void
+init_max_domindexes (Program *program)
+{
+  program_block_foreach (block, program)
+    BLOCK_MAX_DOMINDEX (block) = BLOCK_DOMINDEX (block);
+
+  postorder_foreach (block, program)
+    {
+      Block *idom = BLOCK_IDOM (block);
+      if (idom != NULL)
+	BLOCK_MAX_DOMINDEX (block) = MAX (BLOCK_MAX_DOMINDEX (block),
+					  BLOCK_MAX_DOMINDEX (idom));
+    }
 }

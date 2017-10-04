@@ -51,6 +51,8 @@
   ((block)->postindex)
 #define BLOCK_DOMINDEX(block)			\
   ((block)->domindex)
+#define BLOCK_MAX_DOMINDEX(block)		\
+  ((block)->max_domindex)
 #define BLOCK_IDOM(block)			\
   ((block)->idom)
 #define BLOCK_LIVENESS_R(block)			\
@@ -76,6 +78,7 @@ static inline struct block_list block_dom_children (Block *block);
 static inline InstructionListPosition *block_terminating (Block *block);
 
 bool block_root (Block *block);
+bool block_dominates (Block *a, Block *b);
 
 void block_add_successor (Block *source, Block *target);
 void block_add_predecessor (Block *target, Block *source);
@@ -112,6 +115,7 @@ struct block
   ptrdiff_t preindex;
   ptrdiff_t postindex;
   ptrdiff_t domindex;
+  ptrdiff_t max_domindex;
   Block *idom;
   Bitset* liveness_r;
   /* TODO: Implement and use a SparseBitset for liveness_t.  */

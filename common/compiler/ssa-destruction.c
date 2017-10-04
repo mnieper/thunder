@@ -20,8 +20,13 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+#include <stdbool.h>
 
 #include "common.h"
+
+#ifdef DEBUG
+# include <stdio.h>
+#endif
 
 static void add_move_instructions (Compiler *compiler);
 static void isolate_phis (Compiler *compiler);
@@ -30,6 +35,11 @@ static void init_congruence_classes (Program *program);
 static void merge_congruence_classes (Variable *v, Variable *w);
 static void coalesce_phis (Program *program);
 static void coalesce_phi (Program *program, Block *block, Instruction *phi);
+static void coalesce_moves (Program *program);
+static void coalesce_move (Program *program, Block *block, Instruction *ins);
+static bool congruence_classes_interfere (Program *program, VariableVector *x,
+					  VariableVector *y);
+static bool intersect (Program *program, Variable *v, Variable *w);
 
 #define PROGRAM (&compiler->program)
 
@@ -51,6 +61,25 @@ static void coalesce_phi (Program *program, Block *block, Instruction *phi);
 		   && (block_list_iterator_next (&j##__LINE__, &pred, NULL) \
 		       || true); )
 
+#define dest_source_foreach(dest, source, ins)				\
+  for (bool b##__LINE__ = true; b##__LINE__; )				\
+    for (VariableListIterator i##__LINE__				\
+	   = variable_list_iterator ((ins)->dests);			\
+	 b##__LINE__; )							\
+      for (VariableListIterator j##__LINE__				\
+	     = variable_list_iterator ((ins)->sources);			\
+	   b##__LINE__;)						\
+	for (Variable *(dest); b##__LINE__;				\
+	     b##__LINE__ = false,					\
+	       variable_list_iterator_free (&i##__LINE__),		\
+	       variable_list_iterator_free (&j##__LINE__))		\
+	  for (Variable *(source);					\
+	       variable_list_iterator_next (&i##__LINE__, &dest, NULL)	\
+		 && (variable_list_iterator_next (&j##__LINE__, &source, NULL) \
+		     || true); )
+
+DEFINE_VECTOR(Worklist, Variable *, worklist)
+
 void
 program_convert_out_of_ssa (Compiler *compiler)
 {
@@ -59,6 +88,7 @@ program_convert_out_of_ssa (Compiler *compiler)
   program_init_def_use_chains (PROGRAM);
   init_congruence_classes (PROGRAM);
   coalesce_phis (PROGRAM);
+  coalesce_moves (PROGRAM);
 }
 
 void
@@ -177,4 +207,86 @@ merge_congruence_classes (Variable *v, Variable *w)
 
   variable_vector_destroy (&x);
   variable_vector_clear (d);
+}
+
+void
+coalesce_moves (Program *program)
+{
+  /* TODO: Choose a suitable order for the aggressive coalescing.  */
+  domorder_foreach (block, program)
+    {
+      coalesce_move (program, block, BLOCK_MOVE_IN (block));
+      coalesce_move (program, block, BLOCK_MOVE_OUT (block));
+    }
+}
+
+void
+coalesce_move (Program *program, Block *block, Instruction *move)
+{
+  dest_source_foreach (dest, source, move)
+    {
+      if (VARIABLE_CONGRUENCE (dest) == VARIABLE_CONGRUENCE (source))
+	/* The variables are already coalesced.  */
+	continue;
+      if (!congruence_classes_interfere (program,
+					 variable_congruence_class (dest),
+					 variable_congruence_class (source)))
+	  merge_congruence_classes (dest, source);
+    }
+}
+
+bool
+congruence_classes_interfere (Program *program, VariableVector *x,
+			      VariableVector *y)
+{
+  bool res = false;
+
+  Worklist worklist;
+  worklist_init (&worklist);
+
+  Variable **p = variable_vector_begin (x);
+  Variable **q = variable_vector_begin (y);
+  while (p != variable_vector_end (x) || q != variable_vector_end (y))
+    {
+      Variable **other = worklist_top (&worklist);
+      Variable *current;
+      if (p == variable_vector_end (x)
+	  || (q != variable_vector_end (y)
+	      && VARIABLE_INDEX (*q) < VARIABLE_INDEX (*p)))
+	current = *(q++);
+      else
+	current = *(p++);
+
+      while ((other = worklist_top (&worklist)) != NULL
+	     && !variable_def_dominates (*other, current))
+	{
+	  worklist_pop (&worklist);
+	  other = worklist_top (&worklist);
+	}
+
+      if (other != NULL && intersect (program, *other, current))
+	{
+	  res = true;
+	  break;
+	}
+      worklist_push (&worklist, &current);
+    }
+
+  worklist_destroy (&worklist);
+
+  return res;
+}
+
+/* We assume that the definition of V dominates the definition of W.  */
+bool
+intersect (Program *program, Variable *v, Variable *w)
+{
+  bool res = variable_live_at (program,
+			       VARIABLE_DEF_BLOCK (w), VARIABLE_DEF_TIME (w),
+			       v);
+#ifdef DEBUG
+  fprintf (stderr, "VM: intersect (domindex=%tu, domindex=%tu): %u\n",
+	   VARIABLE_INDEX (v), VARIABLE_INDEX (w), res);
+#endif
+  return res;
 }

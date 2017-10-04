@@ -59,6 +59,13 @@ block_root (Block *block)
   return block_list_size (block->predecessors) == 0;
 }
 
+bool
+block_dominates (Block *a, Block *b)
+{
+  return (BLOCK_DOMINDEX (a) <= BLOCK_DOMINDEX (b)
+	  && BLOCK_DOMINDEX (b) <= BLOCK_MAX_DOMINDEX (a));
+}
+
 void
 block_add_successor (Block *source, Block *target)
 {

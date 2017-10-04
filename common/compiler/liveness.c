@@ -21,6 +21,7 @@
 # include <config.h>
 #endif
 #include <stddef.h>
+#include <stdlib.h>
 
 #include "bitset.h"
 #include "common.h"
@@ -29,6 +30,11 @@ static void add_use (Block *block, Variable *var, size_t time);
 static void add_def (Block *block, Variable *var, size_t varindex, size_t time);
 static void init_liveness_r (Program *program);
 static void init_liveness_t (Program *program);
+static bool live_in (Program *program, Block *block, Variable *var);
+static bool live_out (Program *program, Block *block, Variable *var);
+static bool live (Program *program, Block *block, Variable *var, Block *ignore);
+static bool use_outside_def (Variable *var);
+bool last_use_time (Block *block, Variable *var, size_t *time);
 
 void
 program_init_liveness (Program *program)
@@ -143,4 +149,100 @@ init_liveness_t (Program *program)
 
   for (size_t i = 0; i < blocks; i++)
     bitset_set_at (BLOCK_LIVENESS_T (PROGRAM_DOMORDER (program)[i]), i, true);
+}
+
+bool
+variable_live_at (Program *program, Block *block, size_t time,
+		  Variable *v)
+{
+  if (live_out (program, block, v))
+    return true;
+
+  if (VARIABLE_DEF_BLOCK (v) != block && !live_in (program, block, v))
+    return false;
+
+  size_t time_of_last_use;
+  if (!last_use_time (block, v, &time_of_last_use))
+    return false;
+
+  return time_of_last_use >= time;
+}
+
+bool
+live_in (Program *program, Block *block, Variable *var)
+{
+  return live (program, block, var, NULL);
+}
+
+bool
+live_out (Program *program, Block *block, Variable *var)
+{
+  if (block == VARIABLE_DEF_BLOCK (var))
+    return use_outside_def (var);
+
+  return live (program, block, var,
+	       BLOCK_BACK_EDGE_TARGET (block) ? NULL : block);
+}
+
+bool
+live (Program *program, Block *block, Variable *var, Block *ignore)
+{
+  Block *def_block = VARIABLE_DEF_BLOCK (var);
+  size_t max_domindex = BLOCK_MAX_DOMINDEX (def_block);
+
+  if (BLOCK_DOMINDEX (block) <= BLOCK_DOMINDEX (def_block)
+      || BLOCK_DOMINDEX (block) > max_domindex)
+    return false;
+
+  Block *b;
+  for (size_t i = BLOCK_DOMINDEX (def_block) + 1;
+       i <= max_domindex
+	 && ((i = bitset_next (BLOCK_LIVENESS_T (block), i, true))
+	     <= max_domindex);
+       i = BLOCK_MAX_DOMINDEX (b) + 1)
+    {
+      b = PROGRAM_DOMORDER (program)[i];
+      use_foreach(use, var)
+	if ((b != ignore || use->block != ignore)
+	    && bitset_at (BLOCK_LIVENESS_R (b), BLOCK_DOMINDEX (use->block)))
+	  return true;
+    }
+  return false;
+}
+
+bool
+use_outside_def (Variable *var)
+{
+  UseChain *uses = variable_use_chain (var);
+
+  if (use_chain_empty (uses))
+    return false;
+  if (use_chain_begin (uses)->block == VARIABLE_DEF_BLOCK (var))
+    return use_chain_size (uses) > 1;
+  return true;
+}
+
+static int compare_use (const Block *block, const Use *use);
+
+bool
+last_use_time (Block *block, Variable *var, size_t *time)
+{
+  Use *use = bsearch (block,
+		      use_chain_begin (&var->use_chain),
+		      use_chain_size (&var->use_chain),
+		      sizeof (Use),
+		      (int (*) (const void *, const void *)) compare_use);
+  if (use == NULL)
+    return false;
+  *time = use->last_use_time;
+  return true;
+}
+
+int compare_use (const Block *block, const Use *use)
+{
+  if (BLOCK_DOMINDEX (block) == BLOCK_DOMINDEX (use->block))
+    return 0;
+  if (BLOCK_DOMINDEX (block) < BLOCK_DOMINDEX (use->block))
+    return -1;
+  return 1;
 }
