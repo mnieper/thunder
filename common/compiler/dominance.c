@@ -158,7 +158,7 @@ init_max_domindexes (Program *program)
     {
       Block *idom = BLOCK_IDOM (block);
       if (idom != NULL)
-	BLOCK_MAX_DOMINDEX (block) = MAX (BLOCK_MAX_DOMINDEX (block),
-					  BLOCK_MAX_DOMINDEX (idom));
+	BLOCK_MAX_DOMINDEX (idom) = MAX (BLOCK_MAX_DOMINDEX (idom),
+					 BLOCK_MAX_DOMINDEX (block));
     }
 }

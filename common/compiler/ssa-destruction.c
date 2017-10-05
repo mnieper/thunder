@@ -22,6 +22,7 @@
 #endif
 #include <stdbool.h>
 
+#include "assure.h"
 #include "common.h"
 
 #ifdef DEBUG
@@ -259,10 +260,7 @@ congruence_classes_interfere (Program *program, VariableVector *x,
 
       while ((other = worklist_top (&worklist)) != NULL
 	     && !variable_def_dominates (*other, current))
-	{
-	  worklist_pop (&worklist);
-	  other = worklist_top (&worklist);
-	}
+	worklist_pop (&worklist);
 
       if (other != NULL && intersect (program, *other, current))
 	{
@@ -277,10 +275,10 @@ congruence_classes_interfere (Program *program, VariableVector *x,
   return res;
 }
 
-/* We assume that the definition of V dominates the definition of W.  */
 bool
 intersect (Program *program, Variable *v, Variable *w)
 {
+  assure (variable_def_dominates (v, w));
   bool res = variable_live_at (program,
 			       VARIABLE_DEF_BLOCK (w), VARIABLE_DEF_TIME (w),
 			       v);

@@ -25,6 +25,10 @@
 #include "assure.h"
 #include "common.h"
 
+#ifdef DEBUG
+# include <stdio.h>
+#endif
+
 Variable *
 variable_create (Compiler *compiler)
 {
@@ -44,12 +48,21 @@ variable_free (Variable *var)
 bool
 variable_def_dominates (Variable *v, Variable *w)
 {
+  bool res;
+
   assure (v != NULL);
   assure (w != NULL);
 
   if (block_dominates (VARIABLE_DEF_BLOCK (v), VARIABLE_DEF_BLOCK (w)))
-    return true;
-  if (VARIABLE_DEF_BLOCK (v) != VARIABLE_DEF_BLOCK (w))
-    return false;
-  return VARIABLE_DEF_TIME (v) <= VARIABLE_DEF_TIME (w);
+    res = true;
+  else if (VARIABLE_DEF_BLOCK (v) != VARIABLE_DEF_BLOCK (w))
+    res = false;
+  else res = VARIABLE_DEF_TIME (v) <= VARIABLE_DEF_TIME (w);
+
+#ifdef DEBUG
+  fprintf (stderr, "VM: variable_def_dominates (domindex=%tu, domindex=%tu): %u\n",
+	   VARIABLE_INDEX (v), VARIABLE_INDEX (w), res);
+#endif
+
+  return res;
 }

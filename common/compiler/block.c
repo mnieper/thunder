@@ -117,8 +117,10 @@ struct instruction *block_add_instruction_before (struct compiler *compiler,
 
 void
 block_out_str (FILE *out, Block *block){
-  fprintf (out, "BLOCK (preindex=%tu, postindex=%tu, domindex=%tu)\n",
-	   block->preindex, block->postindex, block->domindex);
+  fprintf (out, "BLOCK (preindex=%tu, postindex=%tu, domindex=%tu, max_dom=%tu, bet=%u)\n",
+	   block->preindex, block->postindex, block->domindex,
+	   block->max_domindex,
+	   BLOCK_BACK_EDGE_TARGET (block));
   phi_foreach (phi, block)
     instruction_out_str (out, phi);
   block_instruction_foreach (ins, block)

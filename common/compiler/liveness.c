@@ -34,7 +34,27 @@ static bool live_in (Program *program, Block *block, Variable *var);
 static bool live_out (Program *program, Block *block, Variable *var);
 static bool live (Program *program, Block *block, Variable *var, Block *ignore);
 static bool use_outside_def (Variable *var);
-bool last_use_time (Block *block, Variable *var, size_t *time);
+static bool last_use_time (Block *block, Variable *var, size_t *time);
+
+/* TODO: Coalesce with same macro in ssa-destruction.c */
+#define phi_source_foreach(var, pred, pos, block, phi)			\
+  for (bool b##__LINE__ = true; b##__LINE__; )				\
+    for (VariableListIterator i##__LINE__				\
+	   = variable_list_iterator ((phi)->sources);			\
+	 b##__LINE__; )							\
+      for (BlockListIterator j##__LINE__				\
+	     = block_list_iterator ((block)->predecessors);		\
+	   b##__LINE__;)						\
+	for (VariableListPosition *(pos); b##__LINE__;)			\
+	  for (Block *(pred); b##__LINE__;				\
+	       b##__LINE__ = false,					\
+		 variable_list_iterator_free (&i##__LINE__),		\
+		 block_list_iterator_free (&j##__LINE__))		\
+	    for (Variable *(var);					\
+		 variable_list_iterator_next (&i##__LINE__, &var, &pos)	\
+		   && (block_list_iterator_next (&j##__LINE__, &pred, NULL) \
+		       || true); )
+
 
 void
 program_init_liveness (Program *program)
@@ -52,8 +72,8 @@ program_init_def_use_chains (Program *program)
     {
       phi_foreach (phi, block)
 	{
-	  source_foreach (var, phi)
-	    add_use (block, var, time);
+	  phi_source_foreach (var, pred, pos, block, phi)
+	    add_use (pred, var, time);
 	  dest_foreach (var, phi)
 	    add_def (block, var, varindex++, time + 1);
 	}
@@ -171,17 +191,30 @@ variable_live_at (Program *program, Block *block, size_t time,
 bool
 live_in (Program *program, Block *block, Variable *var)
 {
-  return live (program, block, var, NULL);
+  bool res = live (program, block, var, NULL);
+#ifdef DEBUG
+  fprintf (stderr, "VM: live_in (preindex=%tu, domindex=%tu): %u\n",
+	   BLOCK_PREINDEX (block), VARIABLE_INDEX (var), res);
+#endif
+  return res;
 }
 
 bool
 live_out (Program *program, Block *block, Variable *var)
 {
+  bool res;
+
   if (block == VARIABLE_DEF_BLOCK (var))
     return use_outside_def (var);
+  else
+    res = live (program, block, var,
+		BLOCK_BACK_EDGE_TARGET (block) ? NULL : block);
 
-  return live (program, block, var,
-	       BLOCK_BACK_EDGE_TARGET (block) ? NULL : block);
+#ifdef DEBUG
+  fprintf (stderr, "VM: live_out (preindex=%tu, domindex=%tu): %u\n",
+	   BLOCK_PREINDEX (block), VARIABLE_INDEX (var), res);
+#endif
+  return res;
 }
 
 bool
