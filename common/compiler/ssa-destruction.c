@@ -41,6 +41,9 @@ static void coalesce_move (Program *program, Block *block, Instruction *ins);
 static bool congruence_classes_interfere (Program *program, VariableVector *x,
 					  VariableVector *y);
 static bool intersect (Program *program, Variable *v, Variable *w);
+static void rewrite_variables (Program *program);
+static void rewrite_instruction_variables (Instruction *ins);
+static void sequentialize_parallel_copies (Compiler *compiler);
 
 #define PROGRAM (&compiler->program)
 
@@ -62,23 +65,6 @@ static bool intersect (Program *program, Variable *v, Variable *w);
 		   && (block_list_iterator_next (&j##__LINE__, &pred, NULL) \
 		       || true); )
 
-#define dest_source_foreach(dest, source, ins)				\
-  for (bool b##__LINE__ = true; b##__LINE__; )				\
-    for (VariableListIterator i##__LINE__				\
-	   = variable_list_iterator ((ins)->dests);			\
-	 b##__LINE__; )							\
-      for (VariableListIterator j##__LINE__				\
-	     = variable_list_iterator ((ins)->sources);			\
-	   b##__LINE__;)						\
-	for (Variable *(dest); b##__LINE__;				\
-	     b##__LINE__ = false,					\
-	       variable_list_iterator_free (&i##__LINE__),		\
-	       variable_list_iterator_free (&j##__LINE__))		\
-	  for (Variable *(source);					\
-	       variable_list_iterator_next (&i##__LINE__, &dest, NULL)	\
-		 && (variable_list_iterator_next (&j##__LINE__, &source, NULL) \
-		     || true); )
-
 DEFINE_VECTOR(Worklist, Variable *, worklist)
 
 void
@@ -90,6 +76,10 @@ program_convert_out_of_ssa (Compiler *compiler)
   init_congruence_classes (PROGRAM);
   coalesce_phis (PROGRAM);
   coalesce_moves (PROGRAM);
+  /* After the following step, we can ignore all phi instructions. */
+  rewrite_variables (PROGRAM);
+  /* TODO: Canonicalize all variables.  Eliminate all phi instructions.  */
+  sequentialize_parallel_copies (compiler);
 }
 
 void
@@ -226,9 +216,13 @@ coalesce_move (Program *program, Block *block, Instruction *move)
 {
   dest_source_foreach (dest, source, move)
     {
-      if (VARIABLE_CONGRUENCE (dest) == VARIABLE_CONGRUENCE (source))
+      dest = VARIABLE_CONGRUENCE (dest);
+      source = VARIABLE_CONGRUENCE (source);
+
+      if (dest == source)
 	/* The variables are already coalesced.  */
 	continue;
+
       if (!congruence_classes_interfere (program,
 					 variable_congruence_class (dest),
 					 variable_congruence_class (source)))
@@ -272,6 +266,16 @@ congruence_classes_interfere (Program *program, VariableVector *x,
 
   worklist_destroy (&worklist);
 
+#ifdef DEBUG
+  fprintf (stderr, "VM: congruence_classes_interfere ([");
+  vector_foreach (v, VariableVector, Variable *, variable_vector, x)
+    fprintf (stderr, "%tu ", VARIABLE_INDEX (*v));
+  fprintf (stderr, "], [");
+  vector_foreach (v, VariableVector, Variable *, variable_vector, y)
+    fprintf (stderr, "%tu ", VARIABLE_INDEX (*v));
+  fprintf (stderr, "]: %u\n", res);
+#endif
+
   return res;
 }
 
@@ -287,4 +291,34 @@ intersect (Program *program, Variable *v, Variable *w)
 	   VARIABLE_INDEX (v), VARIABLE_INDEX (w), res);
 #endif
   return res;
+}
+
+void
+rewrite_variables (Program *program)
+{
+  program_block_foreach (block, program)
+    {
+      block_instruction_foreach (ins, block)
+	rewrite_instruction_variables (ins);
+    }
+}
+
+void
+rewrite_instruction_variables (Instruction *ins)
+{
+  dest_pos_foreach (var, pos, ins)
+    instruction_replace_dest (ins, pos, VARIABLE_CONGRUENCE (var));
+  source_pos_foreach (var, pos, ins)
+    instruction_replace_source (ins, pos, VARIABLE_CONGRUENCE (var));
+}
+
+void
+sequentialize_parallel_copies (Compiler *compiler)
+{
+  program_block_foreach (block, PROGRAM)
+    {
+      block_instruction_foreach (ins, block)
+	if (ins->opcode == get_opcode_movr ())
+	  sequentialize_parallel_copy (compiler, ins);
+    }
 }

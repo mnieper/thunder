@@ -34,6 +34,27 @@
   variable_foreach (var, (ins)->dests)
 #define source_foreach(var, ins)		\
   variable_foreach (var, (ins)->sources)
+#define dest_pos_foreach(var, pos, ins)		\
+  variable_pos_foreach (var, pos, (ins)->dests)
+#define source_pos_foreach(var, pos, ins)	\
+  variable_pos_foreach (var, pos, (ins)->sources)
+
+#define dest_source_foreach(dest, source, ins)				\
+  for (bool b##__LINE__ = true; b##__LINE__; )				\
+    for (VariableListIterator i##__LINE__				\
+	   = variable_list_iterator ((ins)->dests);			\
+	 b##__LINE__; )							\
+      for (VariableListIterator j##__LINE__				\
+	     = variable_list_iterator ((ins)->sources);			\
+	   b##__LINE__;)						\
+	for (Variable *(dest); b##__LINE__;				\
+	     b##__LINE__ = false,					\
+	       variable_list_iterator_free (&i##__LINE__),		\
+	       variable_list_iterator_free (&j##__LINE__))		\
+	  for (Variable *(source);					\
+	       variable_list_iterator_next (&i##__LINE__, &dest, NULL)	\
+		 && (variable_list_iterator_next (&j##__LINE__, &source, NULL) \
+		     || true); )
 
 typedef struct instruction Instruction;
 
@@ -46,12 +67,17 @@ Instruction *instruction_create (struct compiler *compiler,
 void instruction_free (Instruction *ins);
 
 Variable *instruction_dest (Instruction *ins);
+static inline struct opcode const *instruction_opcode (Instruction *ins);
 
 void instruction_add_source (Instruction *ins, struct variable *var);
 void instruction_add_dest (Instruction *ins, struct variable *var);
 void instruction_set_dest (Instruction *ins, struct variable *var);
 void instruction_replace_source (Instruction *ins, VariableListPosition *pos,
 				 Variable *var);
+void instruction_replace_dest (Instruction *ins, VariableListPosition *pos,
+			       Variable *var);
+void instruction_replace_dests (Instruction *ins, VariableList new_dests);
+void instruction_replace_sources (Instruction *ins, VariableList new_sources);
 
 #ifdef DEBUG
 void instruction_out_str (FILE *out, Instruction *ins);
@@ -65,5 +91,10 @@ struct instruction
   VariableList dests;
   VariableList sources;
 };
+
+struct opcode const *instruction_opcode (Instruction *ins)
+{
+  return ins->opcode;
+}
 
 #endif /* COMPILER_INSTRUCTION_H */

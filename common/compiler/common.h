@@ -30,6 +30,7 @@
 #include "instruction.h"
 #include "liveness.h"
 #include "opcode.h"
+#include "parallel-copy-sequentialization.h"
 #include "parser.h"
 #include "ssa-destruction.h"
 

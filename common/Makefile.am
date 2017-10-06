@@ -25,7 +25,9 @@ COMPILER_SOURCES = compiler.c compiler/common.h compiler/compiler.c	\
 	compiler/dfs.c compiler/dfs.h compiler/dominance.c		\
 	compiler/dominance.h compiler/instruction.c			\
 	compiler/instruction.h compiler/liveness.c			\
-	compiler/liveness.h compiler/opcodes.def compiler/parser.c	\
+	compiler/liveness.h compiler/opcodes.def			\
+	compiler/parallel-copy-sequentialization.h			\
+	compiler/parallel-copy-sequentialization.c compiler/parser.c	\
 	compiler/parser.h compiler/opcode.c compiler/opcode.h		\
 	compiler/program.c compiler/program.h				\
 	compiler/ssa-destruction.c compiler/ssa-destruction.h		\

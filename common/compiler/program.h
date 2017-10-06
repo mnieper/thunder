@@ -73,6 +73,9 @@ struct program
   Block **postorder;
   Block **domorder;
   EdgeVector back_edges;
+#ifdef DEBUG
+  size_t var_count;
+#endif
 };
 
 static inline EdgeVector *

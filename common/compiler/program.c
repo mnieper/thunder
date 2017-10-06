@@ -34,6 +34,9 @@ program_init (Program *program)
   program->blocks = block_list_create (true);
   program->vars = variable_list_create (true);
   edge_vector_init (&program->back_edges);
+#ifdef DEBUG
+  program->var_count = 0;
+#endif
 }
 
 void
@@ -63,6 +66,9 @@ program_create_var (Compiler *compiler)
 {
   Variable *var = variable_create (compiler);
   variable_list_add (compiler->program.vars, var);
+#ifdef DEBUG
+  VARIABLE_NAME (var) = compiler->program.var_count++;
+#endif
   return var;
 }
 

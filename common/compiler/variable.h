@@ -20,11 +20,15 @@
 #ifndef COMPILER_VARIABLE_H_INCLUDED
 #define COMPILER_VARIABLE_H_INCLUDED
 
+#include <stdbool.h>
+
 #include "list.h"
 #include "vector.h"
 
 #define variable_foreach(v, l)					\
   list_foreach (v, VariableList, Variable, variable_list, l)
+#define variable_pos_foreach(v, p, l)					\
+  list_pos_foreach (v, p, VariableList, Variable, variable_list, l)
 
 typedef struct variable Variable;
 
@@ -39,10 +43,17 @@ variable_congruence_class (Variable *var);
 
 bool variable_def_dominates (Variable *v, Variable *w);
 
-#define VARIABLE_INDEX(var)      ((var)->varindex)
-#define VARIABLE_DEF_BLOCK(var)  ((var)->def_block)
-#define VARIABLE_DEF_TIME(var)   ((var)->def_time)
-#define VARIABLE_CONGRUENCE(var) ((var)->congruence)
+#define VARIABLE_INDEX(var)              ((var)->varindex)
+#define VARIABLE_DEF_BLOCK(var)          ((var)->def_block)
+#define VARIABLE_DEF_TIME(var)           ((var)->def_time)
+#define VARIABLE_CONGRUENCE(var)         ((var)->congruence)
+#define VARIABLE_PARALLEL_COPY_LOC(var)  ((var)->parallel_copy_loc)
+#define VARIABLE_PARALLEL_COPY_PRED(var) ((var)->parallel_copy_pred)
+#define VARIABLE_PARALLEL_COPY_SEEN(var) ((var)->parallel_copy_seen)
+
+#ifdef DEBUG
+# define VARIABLE_NAME(var) ((var)->name)
+#endif
 
 DEFINE_LIST(VariableList, Variable, variable_list, variable_free);
 
@@ -63,6 +74,12 @@ struct variable
   UseChain use_chain;
   Variable *congruence;
   VariableVector congruence_class;
+  Variable *parallel_copy_loc;
+  Variable *parallel_copy_pred;
+  bool parallel_copy_seen : 1;
+#ifdef DEBUG
+  size_t name;
+#endif
 };
 
 static inline UseChain *

@@ -74,16 +74,37 @@ instruction_replace_source (Instruction *ins, VariableListPosition *pos,
   variable_list_replace (ins->sources, pos, var);
 }
 
+void
+instruction_replace_dest (Instruction *ins, VariableListPosition *pos,
+			  Variable *var)
+{
+  variable_list_replace (ins->dests, pos, var);
+}
+
+void
+instruction_replace_dests (Instruction *ins, VariableList new_dests)
+{
+  variable_list_free (ins->dests);
+  ins->dests = new_dests;
+}
+
+void
+instruction_replace_sources (Instruction *ins, VariableList new_sources)
+{
+  variable_list_free (ins->sources);
+  ins->sources = new_sources;
+}
+
 #ifdef DEBUG
 void
 instruction_out_str (FILE *out, Instruction *ins)
 {
   dest_foreach (var, ins)
-    fprintf (out, "%zu ", VARIABLE_INDEX (var));
+    fprintf (out, "%zu ", VARIABLE_NAME (var));
   fprintf (out, "<- ");
   opcode_out_str (out, ins->opcode);
   source_foreach (var, ins)
-    fprintf (out, " %zu", VARIABLE_INDEX (var));
+    fprintf (out, " %zu", VARIABLE_NAME (var));
   fprintf (out, "\n");
 }
 #endif

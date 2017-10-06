@@ -163,6 +163,16 @@
       for (Element *(e); !list_break					\
 	     && list##_iterator_next (&i##__LINE__, &(e), NULL); )
 
+#define list_pos_foreach(e, p, List, Element, list, l)			\
+  for (bool list_break = false; !list_break; )				\
+    for (List##Position *(p); !list_break; )				\
+      for (List##Iterator i##__LINE__ = list##_iterator ((l));		\
+	   !list_break;							\
+	   list_break = true,						\
+	     list##_iterator_free (&i##__LINE__))			\
+	for (Element *(e); !list_break					\
+	       && list##_iterator_next (&i##__LINE__, &(e), &(p)); )
+
 #define list_foreach_break			\
   do						\
     {						\
