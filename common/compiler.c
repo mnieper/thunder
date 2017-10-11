@@ -74,6 +74,7 @@ compile (Heap *heap, Object code)
   program_init_dominance (&compiler);
   program_init_liveness (&compiler.program);
   program_convert_out_of_ssa (&compiler);
+  program_register_allocate (&compiler);
 #ifdef DEBUG
   program_dump (&compiler.program, "program.txt");
 #endif

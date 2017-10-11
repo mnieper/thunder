@@ -30,6 +30,7 @@ COMPILER_SOURCES = compiler.c compiler/common.h compiler/compiler.c	\
 	compiler/parallel-copy-sequentialization.c compiler/parser.c	\
 	compiler/parser.h compiler/opcode.c compiler/opcode.h		\
 	compiler/program.c compiler/program.h				\
+	compiler/register-allocation.c compiler/register-allocation.h 	\
 	compiler/ssa-destruction.c compiler/ssa-destruction.h		\
 	compiler/variable.c compiler/variable.h
 
