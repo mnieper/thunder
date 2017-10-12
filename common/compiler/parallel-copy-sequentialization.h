@@ -21,6 +21,8 @@
 #define PARALLEL_COPY_SEQUENTIALIZATION_H_INCLUDED
 
 void sequentialize_parallel_copy (struct compiler *compiler,
+				  struct block *block,
+				  struct instruction_list_position *pos,
 				  struct instruction *ins);
 
 #endif /* PARALLEL_COPY_SEQUENTIALIZATION_H_INCLUDED */

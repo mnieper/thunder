@@ -100,8 +100,6 @@ void program_register_allocate (struct compiler *compiler)
     {
       block_instruction_foreach (ins, block)
 	{
-	  dest_foreach (var, ins)
-	    var->spill_slot = -1;
 	}
     }
 

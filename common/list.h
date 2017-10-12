@@ -152,6 +152,25 @@
   list##_iterator_free (List##Iterator *i)				\
   {									\
     gl_list_iterator_free (&i->gl_list_iterator);			\
+  }									\
+									\
+  static inline List##Position *					\
+  list##_begin (List l)							\
+  {									\
+    List##Position *first;						\
+    Element *e;								\
+    List##Iterator i = list##_iterator (l);				\
+    if (!list##_iterator_next (&i, &e, &first))				\
+      first = NULL;							\
+    list##_iterator_free (&i);						\
+    return first;							\
+  }									\
+									\
+  static inline List##Position *					\
+  list##_next (List l, List##Position *pos)				\
+  {									\
+    return (List##Position *)						\
+      gl_list_next_node (l.gl_list, (gl_list_node_t) pos);		\
   }
 
 #define list_foreach(e, List, Element, list, l)				\

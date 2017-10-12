@@ -32,15 +32,18 @@
 
 DEFINE_VECTOR (Worklist, Variable *, worklist)
 
+static void
+add_move (Compiler *compiler, Block *block, InstructionListPosition* pos,
+	  Variable *dest, Variable *source);
+
+#define ADD_MOVE(dest, source)				\
+  (add_move (compiler, block, pos, (dest), (source)))
 void
-sequentialize_parallel_copy (Compiler *compiler, Instruction *move)
+sequentialize_parallel_copy (Compiler *compiler,
+			     Block *block,
+			     InstructionListPosition *pos,
+			     Instruction *move)
 {
-  // Idea: Put the emitted copies in two variable lists; replace
-  // the arguments to the parallel move; interpret as sequential move.
-
-  VariableList new_dests = variable_list_create (false);
-  VariableList new_sources = variable_list_create (false);
-
   Worklist ready, todo;
   worklist_init (&ready);
   worklist_init (&todo);
@@ -85,8 +88,7 @@ sequentialize_parallel_copy (Compiler *compiler, Instruction *move)
 	{
 	  Variable *a = PRED (*b);
 	  Variable *c = LOC (a);
-	  variable_list_add (new_dests, *b);
-	  variable_list_add (new_sources, c);
+	  ADD_MOVE (*b, c);
 	  LOC (a) = *b;
 	  if (a == c && PRED (a) != NULL)
 	    worklist_push (&ready, &a);
@@ -95,8 +97,7 @@ sequentialize_parallel_copy (Compiler *compiler, Instruction *move)
       if (*b == LOC (*b))
 	{
 	  Variable *n = program_create_var (compiler);
-	  variable_list_add (new_dests, n);
-	  variable_list_add (new_sources, *b);
+	  ADD_MOVE (n, *b);
 	  LOC (*b) = n;
 	  worklist_push (&ready, b);
 	}
@@ -104,9 +105,20 @@ sequentialize_parallel_copy (Compiler *compiler, Instruction *move)
   worklist_destroy (&ready);
   worklist_destroy (&todo);
 
-  instruction_replace_dests (move, new_dests);
-  instruction_replace_sources (move, new_sources);
+  block_remove_instruction (block, pos);
 }
+#undef ADD_MOVE
+
+void
+add_move (Compiler *compiler, Block *block, InstructionListPosition* pos,
+	  Variable *dest, Variable *source)
+{
+  Instruction *ins
+    = block_add_instruction_before (compiler, block, pos, get_opcode_movr ());
+  instruction_add_dest (ins, dest);
+  instruction_add_source (ins, source);
+}
+
 #undef LOC
 #undef PRED
 #undef SEEN

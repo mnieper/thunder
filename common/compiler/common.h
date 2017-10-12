@@ -32,6 +32,7 @@
 #include "opcode.h"
 #include "parallel-copy-sequentialization.h"
 #include "parser.h"
+#include "register-allocation.h"
 #include "ssa-destruction.h"
 
 #endif /* COMPILER_COMMON_H_INCLUDED */

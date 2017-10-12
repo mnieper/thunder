@@ -76,6 +76,11 @@ void block_free (Block *block);
 
 static inline struct block_list block_dom_children (Block *block);
 static inline InstructionListPosition *block_terminating (Block *block);
+static inline InstructionListPosition *block_first_instruction (Block *block);
+static inline InstructionListPosition *
+block_next_instruction (Block *block, InstructionListPosition *pos);
+static inline Instruction *block_instruction_at (Block *block,
+						 InstructionListPosition *pos);
 
 bool block_root (Block *block);
 bool block_dominates (Block *a, Block *b);
@@ -95,6 +100,8 @@ struct instruction *block_add_instruction_before (struct compiler *compiler,
 						  Block *block,
 						  InstructionListPosition *pos,
 						  const Opcode *opcode);
+static void block_remove_instruction (Block *block,
+				      InstructionListPosition *pos);
 
 #ifdef DEBUG
 void block_out_str (FILE *out, Block *block);
@@ -123,16 +130,39 @@ struct block
   bool back_edge_target : 1;
 };
 
-static inline BlockList
+inline BlockList
 block_dom_children (Block *block)
 {
   return block->dom_children;
 }
 
-static inline InstructionListPosition *
+inline InstructionListPosition *block_first_instruction (Block *block)
+{
+  return instruction_list_begin (block->instructions);
+}
+
+inline InstructionListPosition *
 block_terminating (Block *block)
 {
   return block->last_instruction;
+}
+
+inline InstructionListPosition *
+block_next_instruction (Block *block, InstructionListPosition *pos)
+{
+  return instruction_list_next (block->instructions, pos);
+}
+
+inline Instruction *
+block_instruction_at (Block *block, InstructionListPosition *pos)
+{
+  return instruction_list_at (block->instructions, pos);
+}
+
+inline void
+block_remove_instruction (Block *block, InstructionListPosition *pos)
+{
+  instruction_list_remove (block->instructions, pos);
 }
 
 #endif /* COMPILER_BLOCK_H_INCLUDED */

@@ -317,8 +317,14 @@ sequentialize_parallel_copies (Compiler *compiler)
 {
   program_block_foreach (block, PROGRAM)
     {
-      block_instruction_foreach (ins, block)
-	if (ins->opcode == get_opcode_movr ())
-	  sequentialize_parallel_copy (compiler, ins);
+      InstructionListPosition *pos = block_first_instruction (block);
+      while (pos != NULL)
+	{
+	  InstructionListPosition *next = block_next_instruction (block, pos);
+	  Instruction *ins = block_instruction_at (block, pos);
+	  if (ins->opcode == get_opcode_movr ())
+	    sequentialize_parallel_copy (compiler, block, pos, ins);
+	  pos = next;
+	}
     }
 }
