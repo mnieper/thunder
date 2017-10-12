@@ -24,7 +24,9 @@
 #include <stddef.h>
 #include <stdlib.h>
 
+#include "bitset.h"
 #include "common.h"
+#include "set.h"
 
 #define PROGRAM (&(compiler)->program)
 
@@ -60,8 +62,31 @@
  * im Traversal des Dominance-Trees.  Genaue Datenstruktur???
  */
 
-void program_register_allocate (struct compiler *compiler)
+static void index_instructions (Program *program);
+static size_t index_variables (Program *program);
+static void init_bitsets (Program *program, size_t var_count);
+static void init_defs_uses (Program *program);
+static void init_live_in (Program *program, size_t var_count);
+static bool liveness_local_flow (Program *program, Block *block,
+				 Bitset **varset);
+
+DEFINE_SET (BlockSet, Block, block_set)
+DEFINE_VECTOR (Worklist, Block *, worklist)
+
+#define worklist_foreach(b, w)				\
+  vector_foreach(b, Worklist, Block *, worklist, w)
+
+#define PROGRAM (&(compiler)->program)
+
+void
+program_register_allocate (struct compiler *compiler)
 {
+  index_instructions (PROGRAM);
+  size_t var_count = index_variables (PROGRAM);
+  init_bitsets (PROGRAM, var_count);
+  init_defs_uses (PROGRAM);
+  init_live_in (PROGRAM, var_count);
+
   // Für jede Variable erzeuge ein Intervall.  Diese liegen in
   // "unhandled".  Wir gehen diese in Dominance-Tree-Reihenfolge
   // durch.
@@ -96,11 +121,134 @@ void program_register_allocate (struct compiler *compiler)
   // Dominance-Trees. Wann ist die Livetime einer Kongruenzklasse
   // dort?
 
-  program_block_foreach (block, PROGRAM)
+
+}
+
+void
+index_instructions (Program *program)
+{
+  size_t time = 0;
+  domorder_foreach (block, program)
+    {
+      block_instruction_foreach (ins, block)
+	INSTRUCTION_TIME (ins) = time++;
+    }
+}
+
+size_t
+index_variables (Program *program)
+{
+  program_block_foreach (block, program)
     {
       block_instruction_foreach (ins, block)
 	{
+	  dest_foreach (var, ins)
+	    VARIABLE_INDEX (var) = -1;
 	}
     }
+  ptrdiff_t index = 0;
+  program_block_foreach (block, program)
+    {
+      block_instruction_foreach (ins, block)
+	{
+	  dest_foreach (var, ins)
+	    if (VARIABLE_INDEX (var) == -1)
+	      VARIABLE_INDEX (var) = index++;
+	}
+    }
+  return index;
+}
 
+void
+init_bitsets (Program *program, size_t var_count)
+{
+  program_block_foreach (block, program)
+    {
+      BLOCK_DEFS (block) = bitset_create (var_count);
+      BLOCK_USES (block) = bitset_create (var_count);
+      BLOCK_LIVE_IN (block) = bitset_create (var_count);
+      /* No need for LIVE_OUT (XXX) */
+      BLOCK_LIVE_OUT (block) = bitset_create (var_count);
+    }
+}
+
+void
+init_defs_uses (Program *program)
+{
+  program_block_foreach (block, program)
+    {
+      InstructionListPosition *pos = block_terminating (block);
+      while ((pos = block_previous_instruction (block, pos)) != NULL)
+	{
+	  Instruction *ins = block_instruction_at (block, pos);
+	  dest_foreach (var, ins)
+	    {
+	      bitset_set_at (BLOCK_DEFS (block), VARIABLE_INDEX (var), true);
+	      bitset_set_at (BLOCK_USES (block), VARIABLE_INDEX (var), false);
+	    }
+	  source_foreach (var, ins)
+	    bitset_set_at (BLOCK_USES (block), VARIABLE_INDEX (var), true);
+	}
+    }
+}
+
+void
+init_live_in (Program *program, size_t var_count)
+{
+  Bitset *varset = bitset_create (var_count);
+
+  Worklist old_worklist, new_worklist, tmp_worklist;
+  worklist_init (&old_worklist);
+  worklist_init (&new_worklist);
+
+  BlockSet in_worklist = block_set_create ();
+
+  postorder_foreach (block, program)
+    worklist_push (&new_worklist, &block);
+
+  while (!worklist_empty (&new_worklist))
+    {
+      tmp_worklist = old_worklist;
+      old_worklist = new_worklist;
+      new_worklist = tmp_worklist;
+
+      worklist_foreach (block, &old_worklist)
+	if (liveness_local_flow (program, *block, &varset))
+	  predecessor_foreach (pred, *block)
+	    if (block_set_adjoin (in_worklist, pred))
+	      worklist_push (&new_worklist, block);
+
+      worklist_clear (&old_worklist);
+      block_set_clear (in_worklist);
+    }
+
+  block_set_free (in_worklist);
+
+  worklist_destroy (&old_worklist);
+  worklist_destroy (&new_worklist);
+
+  bitset_free (varset);
+}
+
+bool
+liveness_local_flow (Program *program, Block *block, Bitset **varset)
+{
+  Bitset *out = *varset;
+  bitset_clear (out);
+  successor_foreach (succ, block)
+    bitset_union (out, BLOCK_LIVE_IN (succ));
+
+  Bitset *in = out;
+  bitset_diff (in, BLOCK_DEFS (block));
+  bitset_union (in, BLOCK_USES (block));
+  if (!bitset_equal (in, BLOCK_LIVE_IN (block)))
+    {
+      Bitset *tmp = BLOCK_LIVE_IN (block);
+      BLOCK_LIVE_IN (block) = in;
+      *varset = tmp;
+      return true;
+    }
+
+  bitset_free (in);
+  return false;
 }

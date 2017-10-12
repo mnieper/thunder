@@ -65,6 +65,10 @@
   ((block)->move_in)
 #define BLOCK_MOVE_OUT(block)			\
   ((block)->move_out)
+#define BLOCK_DEFS(block)     ((block)->defs)
+#define BLOCK_USES(block)     ((block)->uses)
+#define BLOCK_LIVE_IN(block)  ((block)->live_in)
+#define BLOCK_LIVE_OUT(block) ((block)->live_out)
 
 typedef struct block Block;
 
@@ -79,6 +83,8 @@ static inline InstructionListPosition *block_terminating (Block *block);
 static inline InstructionListPosition *block_first_instruction (Block *block);
 static inline InstructionListPosition *
 block_next_instruction (Block *block, InstructionListPosition *pos);
+static inline InstructionListPosition *
+block_previous_instruction (Block *block, InstructionListPosition *pos);
 static inline Instruction *block_instruction_at (Block *block,
 						 InstructionListPosition *pos);
 
@@ -124,9 +130,13 @@ struct block
   ptrdiff_t domindex;
   ptrdiff_t max_domindex;
   Block *idom;
-  Bitset* liveness_r;
+  Bitset *liveness_r;
   /* TODO: Implement and use a SparseBitset for liveness_t.  */
-  Bitset* liveness_t;
+  Bitset *liveness_t;
+  Bitset *defs;
+  Bitset *uses;
+  Bitset *live_in;
+  Bitset *live_out;
   bool back_edge_target : 1;
 };
 
@@ -151,6 +161,12 @@ inline InstructionListPosition *
 block_next_instruction (Block *block, InstructionListPosition *pos)
 {
   return instruction_list_next (block->instructions, pos);
+}
+
+inline InstructionListPosition *
+block_previous_instruction (Block *block, InstructionListPosition *pos)
+{
+  return instruction_list_previous (block->instructions, pos);
 }
 
 inline Instruction *

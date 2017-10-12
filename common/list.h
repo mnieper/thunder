@@ -173,6 +173,7 @@
       gl_list_next_node (l.gl_list, (gl_list_node_t) pos);		\
   }
 
+
 #define list_foreach(e, List, Element, list, l)				\
   for (bool list_break = false; !list_break; )				\
     for (List##Iterator i##__LINE__ = list##_iterator ((l));		\

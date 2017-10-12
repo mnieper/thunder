@@ -68,7 +68,7 @@ DEFINE_VECTOR (VariableVector, Variable *, variable_vector)
 
 struct variable
 {
-  size_t varindex;
+  ptrdiff_t varindex;
   struct block *def_block;
   size_t def_time;
   UseChain use_chain;

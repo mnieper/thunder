@@ -131,3 +131,9 @@ bitset_next (Bitset *set, BitsetSize i, bool v)
     }
   return i;
 }
+
+bool
+bitset_equal (Bitset *restrict s, Bitset *restrict t)
+{
+  return memcmp (s->bits, t->bits, bit_buffer_size (s->size)) == 0;
+}

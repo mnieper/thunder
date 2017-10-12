@@ -34,5 +34,6 @@ void bitset_set_at (Bitset *, BitsetSize, bool);
 void bitset_union (Bitset *restrict, Bitset *restrict);
 void bitset_diff (Bitset *restrict, Bitset *restrict);
 BitsetSize bitset_next (Bitset *, BitsetSize, bool);
+bool bitset_equal (Bitset *restrict, Bitset *restrict);
 
 #endif /* BITSET_H_INCLUDED */

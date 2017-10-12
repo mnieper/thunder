@@ -62,6 +62,8 @@ struct compiler;
 struct opcode;
 struct variable;
 
+#define INSTRUCTION_TIME(ins) ((ins)->time)
+
 Instruction *instruction_create (struct compiler *compiler,
 				 struct opcode const *opcode);
 void instruction_free (Instruction *ins);
@@ -90,6 +92,7 @@ struct instruction
   struct opcode const *opcode;
   VariableList dests;
   VariableList sources;
+  size_t time;
 };
 
 struct opcode const *instruction_opcode (Instruction *ins)

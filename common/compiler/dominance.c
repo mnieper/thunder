@@ -68,6 +68,7 @@ static void dominance_dataflow (Program *program)
 
       worklist_foreach (block, &old_worklist)
 	if (local_flow (program, *block))
+	  /* XXX: Don't we have to push all successors instead? */
 	  worklist_push (&new_worklist, block);
 
       worklist_clear (&old_worklist);

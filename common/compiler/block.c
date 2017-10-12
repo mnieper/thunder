@@ -36,6 +36,10 @@ block_create (Compiler *compiler)
   block->dom_children = block_list_create (false);
   block->liveness_r = NULL;
   block->liveness_t = NULL;
+  block->defs = NULL;
+  block->uses = NULL;
+  block->live_in = NULL;
+  block->live_out = NULL;
   block->back_edge_target = false;
 
   return block;
@@ -51,6 +55,11 @@ block_free (Block *block)
   block_list_free (block->dom_children);
   bitset_free (block->liveness_r);
   bitset_free (block->liveness_t);
+  bitset_free (block->defs);
+  bitset_free (block->defs);
+  bitset_free (block->uses);
+  bitset_free (block->live_in);
+  bitset_free (block->live_out);
 }
 
 bool
