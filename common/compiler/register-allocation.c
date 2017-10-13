@@ -23,9 +23,11 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdlib.h>
+#include <stdint.h>
 
 #include "bitset.h"
 #include "common.h"
+#include "minmax.h"
 #include "set.h"
 
 #define PROGRAM (&(compiler)->program)
@@ -63,12 +65,14 @@
  */
 
 static void index_instructions (Program *program);
-static size_t index_variables (Program *program);
+static size_t index_variables (Program *program, VariableVector *variables);
 static void init_bitsets (Program *program, size_t var_count);
 static void init_defs_uses (Program *program);
 static void init_live_in (Program *program, size_t var_count);
 static bool liveness_local_flow (Program *program, Block *block,
 				 Bitset **varset);
+static void init_live_intervals (Program *program, VariableVector *variables,
+				 size_t var_count);
 
 DEFINE_SET (BlockSet, Block, block_set)
 DEFINE_VECTOR (Worklist, Block *, worklist)
@@ -81,11 +85,22 @@ DEFINE_VECTOR (Worklist, Block *, worklist)
 void
 program_register_allocate (struct compiler *compiler)
 {
+  VariableVector variables;
+  variable_vector_init (&variables);
+
   index_instructions (PROGRAM);
-  size_t var_count = index_variables (PROGRAM);
+  size_t var_count = index_variables (PROGRAM, &variables);
   init_bitsets (PROGRAM, var_count);
   init_defs_uses (PROGRAM);
   init_live_in (PROGRAM, var_count);
+  init_live_intervals (PROGRAM, &variables, var_count);
+  // Problem: Order of graph.  The loop body comes after the exit block
+  // is dom traversal.  We better make postorder traversal.
+
+
+
+  variable_vector_destroy (&variables);
+
 
   // Für jede Variable erzeuge ein Intervall.  Diese liegen in
   // "unhandled".  Wir gehen diese in Dominance-Tree-Reihenfolge
@@ -130,13 +145,18 @@ index_instructions (Program *program)
   size_t time = 0;
   domorder_foreach (block, program)
     {
+      BLOCK_TIME_FROM (block) = time;
       block_instruction_foreach (ins, block)
-	INSTRUCTION_TIME (ins) = time++;
+	{
+	  INSTRUCTION_TIME (ins) = time;
+	  time += 2;
+	}
+      BLOCK_TIME_TO (block) = time;
     }
 }
 
 size_t
-index_variables (Program *program)
+index_variables (Program *program, VariableVector *variables)
 {
   program_block_foreach (block, program)
     {
@@ -153,7 +173,13 @@ index_variables (Program *program)
 	{
 	  dest_foreach (var, ins)
 	    if (VARIABLE_INDEX (var) == -1)
-	      VARIABLE_INDEX (var) = index++;
+	      {
+		VARIABLE_INDEX (var) = index++;
+		variable_vector_push (variables, &var);
+#ifdef DEBUG
+		VARIABLE_NAME (var) = VARIABLE_INDEX (var);
+#endif
+	      }
 	}
     }
   return index;
@@ -167,7 +193,6 @@ init_bitsets (Program *program, size_t var_count)
       BLOCK_DEFS (block) = bitset_create (var_count);
       BLOCK_USES (block) = bitset_create (var_count);
       BLOCK_LIVE_IN (block) = bitset_create (var_count);
-      /* No need for LIVE_OUT (XXX) */
       BLOCK_LIVE_OUT (block) = bitset_create (var_count);
     }
 }
@@ -177,8 +202,9 @@ init_defs_uses (Program *program)
 {
   program_block_foreach (block, program)
     {
-      InstructionListPosition *pos = block_terminating (block);
-      while ((pos = block_previous_instruction (block, pos)) != NULL)
+      for (InstructionListPosition *pos = block_terminating (block);
+	   pos != NULL;
+	   pos = block_previous_instruction (block, pos))
 	{
 	  Instruction *ins = block_instruction_at (block, pos);
 	  dest_foreach (var, ins)
@@ -233,12 +259,13 @@ init_live_in (Program *program, size_t var_count)
 bool
 liveness_local_flow (Program *program, Block *block, Bitset **varset)
 {
-  Bitset *out = *varset;
-  bitset_clear (out);
+  bitset_clear (BLOCK_LIVE_OUT (block));
   successor_foreach (succ, block)
-    bitset_union (out, BLOCK_LIVE_IN (succ));
+    bitset_union (BLOCK_LIVE_OUT (block), BLOCK_LIVE_IN (succ));
 
-  Bitset *in = out;
+  Bitset *in = *varset;
+  bitset_clear (in);
+  bitset_union (in, BLOCK_LIVE_OUT (block));
   bitset_diff (in, BLOCK_DEFS (block));
   bitset_union (in, BLOCK_USES (block));
   if (!bitset_equal (in, BLOCK_LIVE_IN (block)))
@@ -249,6 +276,47 @@ liveness_local_flow (Program *program, Block *block, Bitset **varset)
       return true;
     }
 
-  bitset_free (in);
   return false;
+}
+
+#define EXTEND_INTERVAL(var, time)			\
+  do							\
+    {							\
+      VARIABLE_LIVE_FROM (var)				\
+	= MIN (VARIABLE_LIVE_FROM (var), time);		\
+      VARIABLE_LIVE_TO (var)				\
+	= MAX (VARIABLE_LIVE_TO (var), time + 1);	\
+    }							\
+  while (0)
+
+void
+init_live_intervals (Program *program, VariableVector *variables,
+		     size_t var_count)
+{
+  for (size_t i = 0; i < var_count; i++)
+    {
+      Variable *var = *variable_vector_at (variables, i);
+
+      VARIABLE_LIVE_FROM (var) = SIZE_MAX;
+      VARIABLE_LIVE_TO (var) = 0;
+
+      program_block_foreach (block, program)
+	{
+	  if (bitset_at (BLOCK_LIVE_IN (block), i))
+	    EXTEND_INTERVAL (var, BLOCK_TIME_FROM (block));
+	  if (bitset_at (BLOCK_LIVE_OUT (block), i))
+	    EXTEND_INTERVAL (var, BLOCK_TIME_TO (block) - 1);
+	}
+    }
+
+  program_block_foreach (block, program)
+    {
+      block_instruction_foreach (ins, block)
+	{
+	  source_foreach (var, ins)
+	    EXTEND_INTERVAL (var, INSTRUCTION_TIME (ins));
+	  dest_foreach (var, ins)
+	    EXTEND_INTERVAL (var, INSTRUCTION_TIME (ins) + 1);
+	}
+    }
 }

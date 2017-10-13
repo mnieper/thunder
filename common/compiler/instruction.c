@@ -99,6 +99,7 @@ instruction_replace_sources (Instruction *ins, VariableList new_sources)
 void
 instruction_out_str (FILE *out, Instruction *ins)
 {
+  fprintf (out, "%zu: ", INSTRUCTION_TIME (ins));
   dest_foreach (var, ins)
     fprintf (out, "%zu ", VARIABLE_NAME (var));
   fprintf (out, "<- ");

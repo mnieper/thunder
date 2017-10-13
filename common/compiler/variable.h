@@ -50,6 +50,8 @@ bool variable_def_dominates (Variable *v, Variable *w);
 #define VARIABLE_PARALLEL_COPY_LOC(var)  ((var)->parallel_copy_loc)
 #define VARIABLE_PARALLEL_COPY_PRED(var) ((var)->parallel_copy_pred)
 #define VARIABLE_PARALLEL_COPY_SEEN(var) ((var)->parallel_copy_seen)
+#define VARIABLE_LIVE_FROM(var)          ((var)->live_from)
+#define VARIABLE_LIVE_TO(var)            ((var)->live_to)
 
 #ifdef DEBUG
 # define VARIABLE_NAME(var) ((var)->name)
@@ -76,6 +78,8 @@ struct variable
   VariableVector congruence_class;
   Variable *parallel_copy_loc;
   Variable *parallel_copy_pred;
+  size_t live_from;
+  size_t live_to;
   bool parallel_copy_seen : 1;
 #ifdef DEBUG
   size_t name;

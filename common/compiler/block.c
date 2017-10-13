@@ -56,7 +56,6 @@ block_free (Block *block)
   bitset_free (block->liveness_r);
   bitset_free (block->liveness_t);
   bitset_free (block->defs);
-  bitset_free (block->defs);
   bitset_free (block->uses);
   bitset_free (block->live_in);
   bitset_free (block->live_out);
@@ -130,6 +129,24 @@ block_out_str (FILE *out, Block *block){
 	   block->preindex, block->postindex, block->domindex,
 	   block->max_domindex,
 	   BLOCK_BACK_EDGE_TARGET (block));
+
+  fprintf (out, "defs:");
+  for (size_t i = 0; i < bitset_size (BLOCK_DEFS (block)); i++)
+    if (bitset_at (BLOCK_DEFS (block), i))
+      fprintf (out, " %zu", i);
+  fprintf (out, "\n");
+
+  fprintf (out, "uses:");
+  for (size_t i = 0; i < bitset_size (BLOCK_USES (block)); i++)
+    if (bitset_at (BLOCK_USES (block), i))
+      fprintf (out, " %zu", i);
+  fprintf (out, "\n");
+
+  fprintf (out, "live in:");
+  for (size_t i = 0; i < bitset_size (BLOCK_LIVE_IN (block)); i++)
+    if (bitset_at (BLOCK_LIVE_IN (block), i))
+      fprintf (out, " %zu", i);
+  fprintf (out, "\n");
   phi_foreach (phi, block)
     instruction_out_str (out, phi);
   block_instruction_foreach (ins, block)

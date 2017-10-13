@@ -92,9 +92,11 @@ program_dump (Program *program, char const *path)
     }
   program_variable_foreach (var, program)
     {
-      fprintf (out, "VARIABLE (domindex=%tu, congruence=%tu)",
+      fprintf (out, "VARIABLE (domindex=%tu, congruence=%tu, from=%tu, to=%tu)",
 	       VARIABLE_INDEX (var),
-	       VARIABLE_INDEX (VARIABLE_CONGRUENCE (var)));
+	       VARIABLE_INDEX (VARIABLE_CONGRUENCE (var)),
+	       VARIABLE_LIVE_FROM (var),
+	       VARIABLE_LIVE_TO (var));
       fprintf (out, "\n");
     }
   fclose (out);

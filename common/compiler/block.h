@@ -65,10 +65,12 @@
   ((block)->move_in)
 #define BLOCK_MOVE_OUT(block)			\
   ((block)->move_out)
-#define BLOCK_DEFS(block)     ((block)->defs)
-#define BLOCK_USES(block)     ((block)->uses)
-#define BLOCK_LIVE_IN(block)  ((block)->live_in)
-#define BLOCK_LIVE_OUT(block) ((block)->live_out)
+#define BLOCK_DEFS(block)      ((block)->defs)
+#define BLOCK_USES(block)      ((block)->uses)
+#define BLOCK_LIVE_IN(block)   ((block)->live_in)
+#define BLOCK_LIVE_OUT(block)  ((block)->live_out)
+#define BLOCK_TIME_FROM(block) ((block)->time_from)
+#define BLOCK_TIME_TO(block)   ((block)->time_to)
 
 typedef struct block Block;
 
@@ -137,6 +139,8 @@ struct block
   Bitset *uses;
   Bitset *live_in;
   Bitset *live_out;
+  size_t time_from;
+  size_t time_to;
   bool back_edge_target : 1;
 };
 

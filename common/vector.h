@@ -70,6 +70,12 @@
     return obstack_next_free (&v->obstack);		\
   }							\
 							\
+  static inline Element *				\
+  vector##_at (Vector *v, size_t i)			\
+  {							\
+    return vector##_begin (v) + i;			\
+  }							\
+							\
   static inline bool					\
   vector##_empty (Vector *v)				\
   {							\
